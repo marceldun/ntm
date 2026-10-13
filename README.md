@@ -7,10 +7,16 @@ Ubuntu 22.04/24.04 or Debian 12/13 VPS installer for a native, low-memory Syncth
 This installer sets up the low-memory Syncthing service, permanently enables automatic acceptance of folders shared by the preconfigured Android device, and installs the HTTPS web drive. It requires no arguments and no interactive input. The web drive defaults to `marcel` / `456qwe456`:
 
 ```bash
-curl -fL --retry 3 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/install-auto-sync-cloud.sh -o /tmp/install-auto-sync-cloud.sh && echo 'e2c24b42f02fc7f9edc2df4516dda8ce0767cdbe587f0ffa432ae4b2cbb36270  /tmp/install-auto-sync-cloud.sh' | sha256sum -c - && bash /tmp/install-auto-sync-cloud.sh
+curl -fL --retry 3 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/install-auto-sync-cloud.sh -o /tmp/install-auto-sync-cloud.sh && echo '0e9e121deb90875dfd8c69b8f51a2e6ce4116486e88be265f1c1f424ba52483b  /tmp/install-auto-sync-cloud.sh' | sha256sum -c - && bash /tmp/install-auto-sync-cloud.sh
 ```
 
 After adding the printed VPS device ID in Syncthing-Fork, every future folder is configured only on Android: add a folder, select its directory, share it with the VPS, and save. The VPS accepts it below `/var/lib/game-save-sync/saves` and displays it in the web drive without any later VPS command.
+
+If an already scanned Android device shows disconnected, run the noninteractive VPS repair once. It restores TCP, QUIC, global discovery, relay, NAT and firewall connectivity, verifies both port 22000 listeners, and checks the Android connection:
+
+```bash
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/repair-syncthing-connection.sh -o /tmp/repair-syncthing-connection.sh && echo '6ac42f7f1baa69ba1bf7e0c3b38bbd777e957d982567abe6941c6a6382e12655  /tmp/repair-syncthing-connection.sh' | sha256sum -c - && bash /tmp/repair-syncthing-connection.sh
+```
 
 On the VPS, run this single command as root and paste the Android Syncthing-Fork device ID when prompted:
 

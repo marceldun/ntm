@@ -47,7 +47,7 @@ ANDROID_ID=${ANDROID_ID^^}
 printf '[1/7] 安装低内存同步服务……\n'
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y --no-install-recommends syncthing python3 ca-certificates curl openssl
+apt-get install -y --no-install-recommends syncthing python3 ca-certificates curl openssl iproute2
 if apt-get install -y --no-install-recommends qrencode; then HAVE_QR=1; else HAVE_QR=0; fi
 command -v syncthing >/dev/null || fail 'Syncthing 安装失败。'
 syncthing serve --help >/dev/null 2>&1 || fail 'Syncthing 版本过旧，不支持 serve 命令。'
@@ -158,6 +158,8 @@ if device is None:
     }
     config.setdefault('devices', []).append(device)
 device.update({'addresses': ['dynamic'], 'autoAcceptFolders': True})
+device['paused'] = False
+device['allowedNetworks'] = []
 
 defaults = config.setdefault('defaults', {}).setdefault('folder', {})
 defaults.update({
@@ -172,10 +174,18 @@ defaults.update({
 
 options = config.setdefault('options', {})
 options.update({
+    'listenAddresses': [
+        'tcp://0.0.0.0:22000',
+        'quic://0.0.0.0:22000',
+        'dynamic+https://relays.syncthing.net/endpoint',
+    ],
+    'globalAnnounceServers': ['default'],
     'startBrowser': False,
-    'localAnnounceEnabled': False,
+    'localAnnounceEnabled': True,
     'globalAnnounceEnabled': True,
     'relaysEnabled': True,
+    'natEnabled': True,
+    'reconnectionIntervalS': 10,
     'maxFolderConcurrency': 1,
 })
 if 'databaseTuning' in options:
@@ -201,7 +211,11 @@ PY
 chown "$APP_USER:$APP_GROUP" "$APP_STATE/.server-id" "$APP_STATE/.android-device-id"
 systemctl restart "$APP_SERVICE"
 for _ in $(seq 1 60); do
-  systemctl is-active --quiet "$APP_SERVICE" && break
+  if systemctl is-active --quiet "$APP_SERVICE" \
+    && ss -H -ltn 'sport = :22000' | grep -q . \
+    && ss -H -lun 'sport = :22000' | grep -q .; then
+    break
+  fi
   sleep 0.5
 done
 systemctl is-active --quiet "$APP_SERVICE" || fail '同步服务重启失败。'
@@ -210,6 +224,8 @@ if command -v ufw >/dev/null 2>&1 && LC_ALL=C ufw status 2>/dev/null | grep -q '
   ufw allow 22000/tcp >/dev/null
   ufw allow 22000/udp >/dev/null
 fi
+ss -H -ltn 'sport = :22000' | grep -q . || fail 'Syncthing TCP 22000 没有监听。'
+ss -H -lun 'sport = :22000' | grep -q . || fail 'Syncthing UDP 22000 没有监听。'
 
 printf '[5/7] 下载并校验网页云盘安装器……\n'
 TEMP_DIR=$(mktemp -d /tmp/auto-sync-cloud.XXXXXX)
