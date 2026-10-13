@@ -11,11 +11,11 @@ readonly APP_SERVICE='game-save-sync.service'
 readonly SYNC_ROOT="$APP_STATE/saves"
 readonly API_URL='http://127.0.0.1:8384'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/install-cloud-drive.sh'
-readonly CLOUD_INSTALLER_SHA='261f6ddbf3efeb68e032b4a708c653809e743141e52e828f2eb28dccd56feee0'
+readonly CLOUD_INSTALLER_SHA='4857d28a8c256b3574e116b032104cf52483d7d723d70261a1d394b63326f666'
 
 ANDROID_ID="${1:-}"
-WEB_USER="${2:-admin}"
-WEB_PASSWORD="${3:-}"
+WEB_USER="${2:-marcel}"
+WEB_PASSWORD="${3:-456qwe456}"
 TEMP_DIR=''
 
 fail() { printf '\n错误：%s\n' "$*" >&2; exit 1; }
@@ -46,10 +46,6 @@ ANDROID_ID=${ANDROID_ID^^}
 [[ $ANDROID_ID =~ ^[A-Z2-7]{7}(-[A-Z2-7]{7}){7}$ ]] || \
   fail '安卓设备 ID 格式不对：必须是 8 组、每组 7 个字符。'
 [[ $WEB_USER =~ ^[A-Za-z0-9_.-]{1,64}$ ]] || fail '云盘用户名格式不正确。'
-if [[ -z $WEB_PASSWORD ]]; then
-  read -r -s -p '设置云盘密码（至少 8 位）: ' WEB_PASSWORD
-  printf '\n'
-fi
 [[ ${#WEB_PASSWORD} -ge 8 ]] || fail '云盘密码至少需要 8 位。'
 
 printf '[1/7] 安装低内存同步服务……\n'

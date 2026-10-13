@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install Game Save Drive on Ubuntu 22.04/24.04 or Debian 12/13.
-# Usage: sudo bash install-cloud-drive.sh USERNAME PASSWORD
+# Usage: sudo bash install-cloud-drive.sh [USERNAME] [PASSWORD]
 set -Eeuo pipefail
 umask 077
 
@@ -11,11 +11,11 @@ readonly DRIVE_ENV='/etc/game-save-drive.env'
 readonly DRIVE_SERVICE='game-save-drive.service'
 readonly APP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/app.py'
 readonly UI_URL='https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/index.html'
-readonly APP_SHA='53f57cda60eff42b75f07921cd078e406d17d9b7a6e46f6508b000f8bd22fe87'
-readonly UI_SHA='1bdda6cb75147b75985f479b0d489e464852427149cb92271f597f9bc7c66ab6'
+readonly APP_SHA='7c016a0a4332187ca798902a201efd4f86756ad901442a40911d9ef191c6b7f5'
+readonly UI_SHA='306ea774f564d80f11b63c7a5478adad46623d7b0bbbe9f788a850207cdea8ae'
 
-USERNAME="${1:-admin}"
-PASSWORD="${2:-}"
+USERNAME="${1:-marcel}"
+PASSWORD="${2:-456qwe456}"
 TEMP_DIR=''
 
 fail(){ printf '\n错误：%s\n' "$*" >&2; exit 1; }
@@ -32,10 +32,6 @@ case "${ID:-}:${VERSION_ID:-}" in
   *) fail "不支持 ${PRETTY_NAME:-当前系统}。" ;;
 esac
 [[ $USERNAME =~ ^[A-Za-z0-9_.-]{1,64}$ ]] || fail '用户名只能包含字母、数字、点、下划线和短横线。'
-if [[ -z $PASSWORD ]]; then
-  read -r -s -p '设置云盘密码（至少 8 位）: ' PASSWORD
-  printf '\n'
-fi
 [[ ${#PASSWORD} -ge 8 ]] || fail '密码至少需要 8 位。'
 [[ -d $DRIVE_ROOT ]] || fail "没有找到 $DRIVE_ROOT；请先完成游戏存档同步脚本。"
 
@@ -63,19 +59,25 @@ fi
 install -d -o gamesync -g gamesync -m 0700 "$DRIVE_STATE" "$DRIVE_STATE/temp"
 chown -R gamesync:gamesync "$DRIVE_ROOT"
 
+EXISTING_SESSION_SECRET=''
+if [[ -r $DRIVE_ENV ]]; then
+  EXISTING_SESSION_SECRET=$(sed -n 's/^DRIVE_SESSION_SECRET=//p' "$DRIVE_ENV" | head -n 1)
+fi
 export DRIVE_SETUP_PASSWORD="$PASSWORD"
+export DRIVE_SETUP_SESSION_SECRET="$EXISTING_SESSION_SECRET"
 AUTH_DATA=$(python3 - "$USERNAME" <<'PY'
 import base64, hashlib, os, secrets, sys
 def b64(value): return base64.urlsafe_b64encode(value).decode().rstrip('=')
 salt = secrets.token_bytes(16)
 password_hash = hashlib.pbkdf2_hmac('sha256', os.environ['DRIVE_SETUP_PASSWORD'].encode(), salt, 310_000)
+session_secret = os.environ.get('DRIVE_SETUP_SESSION_SECRET') or b64(secrets.token_bytes(32))
 print('DRIVE_USERNAME=' + sys.argv[1])
 print('DRIVE_PASSWORD_SALT=' + b64(salt))
 print('DRIVE_PASSWORD_HASH=' + b64(password_hash))
-print('DRIVE_SESSION_SECRET=' + b64(secrets.token_bytes(32)))
+print('DRIVE_SESSION_SECRET=' + session_secret)
 PY
 )
-unset DRIVE_SETUP_PASSWORD
+unset DRIVE_SETUP_PASSWORD DRIVE_SETUP_SESSION_SECRET EXISTING_SESSION_SECRET
 printf '%s\n' "$AUTH_DATA" > "$DRIVE_ENV"
 chmod 0600 "$DRIVE_ENV"
 

@@ -8,6 +8,7 @@
   <style>
     :root{--blue:#0b57d0;--blue2:#c2e7ff;--ink:#1f1f1f;--muted:#5f6368;--line:#dadce0;--bg:#f7f9fc;--card:#fff;--hover:#f0f4f9;--selected:#c2e7ff;--shadow:0 1px 2px #3c40431a,0 1px 3px 1px #3c404326}
     *{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Arial,"Noto Sans SC",sans-serif;color:var(--ink);background:var(--bg)}button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+    .boot{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:100}.boot-card{display:grid;justify-items:center;gap:18px;color:var(--muted)}.boot-spin{width:34px;height:34px;border:4px solid #d3e3fd;border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
     .login{min-height:100%;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 20% 0,#d7edff 0,transparent 35%),var(--bg)}
     .login-card{width:min(430px,100%);background:#fff;border:1px solid var(--line);border-radius:28px;padding:38px;box-shadow:var(--shadow)}
     .brand{display:flex;align-items:center;gap:13px;font-size:21px;color:#444}.brandmark{width:42px;height:36px;position:relative}.brandmark:before,.brandmark:after{content:"";position:absolute;border-radius:7px}.brandmark:before{width:29px;height:29px;background:#0b57d0;transform:rotate(45deg);left:7px;top:2px}.brandmark:after{width:24px;height:16px;background:#8ab4f8;left:9px;top:13px;border:4px solid #fff}
@@ -25,11 +26,12 @@
   </style>
 </head>
 <body>
-  <section id="login" class="login">
+  <section id="boot" class="boot"><div class="boot-card"><span class="brandmark"></span><div class="boot-spin"></div></div></section>
+  <section id="login" class="login hidden">
     <form id="loginForm" class="login-card">
       <div class="brand"><span class="brandmark"></span><span>Game Save Drive</span></div>
       <h1>登录云端存档</h1><p>查看、上传和下载你的模拟器存档。</p>
-      <div class="field"><input id="username" autocomplete="username" placeholder=" " required><label>用户名</label></div>
+      <div class="field"><input id="username" autocomplete="username" placeholder=" " value="marcel" required><label>用户名</label></div>
       <div class="field"><input id="password" type="password" autocomplete="current-password" placeholder=" " required><label>密码</label></div>
       <div id="loginError" class="login-error"></div><button class="primary" type="submit">登录</button><div style="clear:both"></div>
     </form>
@@ -39,7 +41,7 @@
     <header class="topbar">
       <div class="brand"><span class="brandmark"></span><span>Game Save Drive</span></div>
       <label class="search"><span>⌕</span><input id="search" placeholder="在存档中搜索"></label>
-      <div class="account"><button id="logout" class="icon" title="退出">↪</button><span class="avatar">A</span></div>
+      <div class="account"><button id="logout" class="icon" title="退出">↪</button><span class="avatar">M</span></div>
     </header>
     <aside class="sidebar">
       <button class="new-btn" data-upload><b>＋</b>上传文件</button>
@@ -72,8 +74,8 @@
     const api=async(url,opt={})=>{const r=await fetch(url,opt);if(r.status===401){showLogin();throw Error('请重新登录')}const type=r.headers.get('content-type')||'';const data=type.includes('json')?await r.json():await r.blob();if(!r.ok)throw Error(data.error||'请求失败');return data};
     const enc=s=>encodeURIComponent(s), join=(a,b)=>a?a+'/'+b:b;
     function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(t.timer);t.timer=setTimeout(()=>t.classList.add('hidden'),3000)}
-    function showLogin(){ $('#app').classList.add('hidden');$('#login').classList.remove('hidden'); }
-    function showApp(){ $('#login').classList.add('hidden');$('#app').classList.remove('hidden');load(); }
+    function showLogin(){ $('#boot').classList.add('hidden');$('#app').classList.add('hidden');$('#login').classList.remove('hidden'); }
+    function showApp(){ $('#boot').classList.add('hidden');$('#login').classList.add('hidden');$('#app').classList.remove('hidden');load(); }
     $('#loginForm').onsubmit=async e=>{e.preventDefault();$('#loginError').textContent='';try{await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('#username').value,password:$('#password').value})});$('#password').value='';showApp()}catch(x){$('#loginError').textContent=x.message}};
     async function logout(){try{await api('/api/logout',{method:'POST'})}finally{showLogin()}}
     $('#logout').onclick=logout;$('#mobileLogout').onclick=logout;
@@ -101,7 +103,15 @@
     document.querySelector('.new-btn').oncontextmenu=e=>{e.preventDefault();openFolderDialog()};
     $('#createFolder').onclick=async e=>{e.preventDefault();const name=$('#folderName').value.trim();if(!name)return;try{await api('/api/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:state.path,name})});$('#folderDialog').close();toast('文件夹已创建');load()}catch(x){toast(x.message)}};
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.selected.size){state.selected.clear();render()}});
-    api('/api/me').then(showApp).catch(showLogin);
+    async function bootstrap(){
+      try{
+        const r=await fetch('/api/me',{cache:'no-store'});
+        if(r.status===401){showLogin();return}
+        if(!r.ok)throw Error('服务暂不可用');
+        showApp();
+      }catch(_){setTimeout(bootstrap,1000)}
+    }
+    bootstrap();
   </script>
 </body>
 </html>

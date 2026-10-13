@@ -25,7 +25,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PBKDF2_ITERATIONS = 310_000
 MAX_JSON = 1_048_576
-SESSION_SECONDS = 7 * 24 * 60 * 60
+# A successful login remains valid on this browser for ten years. The signed,
+# HttpOnly cookie can still be revoked immediately with the explicit logout.
+SESSION_SECONDS = 10 * 365 * 24 * 60 * 60
 LOGIN_ATTEMPTS = defaultdict(deque)
 LOGIN_LOCK = threading.Lock()
 
