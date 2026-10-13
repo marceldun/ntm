@@ -2,6 +2,16 @@
 
 Ubuntu 22.04/24.04 or Debian 12/13 VPS installer for a native, low-memory Syncthing service.
 
+## Fresh VPS: all-in-one automatic sync and web drive
+
+This installer sets up the low-memory Syncthing service, permanently enables automatic acceptance of folders shared by one Android device, and installs the HTTPS web drive. Replace the three placeholders and run the command once on a fresh VPS:
+
+```bash
+curl -fL --retry 3 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/install-auto-sync-cloud.sh -o /tmp/install-auto-sync-cloud.sh && echo 'dd521bf585417ffd3caf1940c48dcc0c11727e361fedba99a3c897aac9c79886  /tmp/install-auto-sync-cloud.sh' | sha256sum -c - && bash /tmp/install-auto-sync-cloud.sh 'ANDROID_DEVICE_ID' 'WEB_USERNAME' 'WEB_PASSWORD'
+```
+
+After adding the printed VPS device ID in Syncthing-Fork, every future folder is configured only on Android: add a folder, select its directory, share it with the VPS, and save. The VPS accepts it below `/var/lib/game-save-sync/saves` and displays it in the web drive without any later VPS command.
+
 On the VPS, run this single command as root and paste the Android Syncthing-Fork device ID when prompted:
 
 ```bash
