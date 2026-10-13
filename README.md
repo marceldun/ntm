@@ -4,10 +4,10 @@ Ubuntu 22.04/24.04 or Debian 12/13 VPS installer for a native, low-memory Syncth
 
 ## Fresh VPS: all-in-one automatic sync and web drive
 
-This installer sets up the low-memory Syncthing service, permanently enables automatic acceptance of folders shared by one Android device, and installs the HTTPS web drive. Replace the Android device ID and run the command once on a fresh VPS. The web drive defaults to `marcel` / `456qwe456`:
+This installer sets up the low-memory Syncthing service, permanently enables automatic acceptance of folders shared by the preconfigured Android device, and installs the HTTPS web drive. It requires no arguments and no interactive input. The web drive defaults to `marcel` / `456qwe456`:
 
 ```bash
-curl -fL --retry 3 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/install-auto-sync-cloud.sh -o /tmp/install-auto-sync-cloud.sh && echo '79a32f397cf23f37e1043b6d972e4e647ede2f861ab58762a201b658bab35af0  /tmp/install-auto-sync-cloud.sh' | sha256sum -c - && bash /tmp/install-auto-sync-cloud.sh 'ANDROID_DEVICE_ID'
+curl -fL --retry 3 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/install-auto-sync-cloud.sh -o /tmp/install-auto-sync-cloud.sh && echo 'e2c24b42f02fc7f9edc2df4516dda8ce0767cdbe587f0ffa432ae4b2cbb36270  /tmp/install-auto-sync-cloud.sh' | sha256sum -c - && bash /tmp/install-auto-sync-cloud.sh
 ```
 
 After adding the printed VPS device ID in Syncthing-Fork, every future folder is configured only on Android: add a folder, select its directory, share it with the VPS, and save. The VPS accepts it below `/var/lib/game-save-sync/saves` and displays it in the web drive without any later VPS command.
@@ -35,7 +35,7 @@ For each new folder, add it in Syncthing-Fork on Android, select the local direc
 The synchronized files live at `/var/lib/game-save-sync/saves`. The optional web interface exposes that same directory without duplicating data. It provides authenticated HTTPS, responsive desktop/mobile layouts, uploads, single and multi-select downloads, folder navigation, image previews, list/grid views, and modified-time sorting.
 
 ```bash
-curl -fL --retry 3 https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/install-cloud-drive.sh -o /tmp/install-cloud-drive.sh && echo '4857d28a8c256b3574e116b032104cf52483d7d723d70261a1d394b63326f666  /tmp/install-cloud-drive.sh' | sha256sum -c - && bash /tmp/install-cloud-drive.sh
+curl -fL --retry 3 https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/install-cloud-drive.sh -o /tmp/install-cloud-drive.sh && echo '398f1805f823b07c24d19382789441cd9e95b65381fb07fbd42380bc20322b44  /tmp/install-cloud-drive.sh' | sha256sum -c - && bash /tmp/install-cloud-drive.sh
 ```
 
 The installer stores only a PBKDF2 password hash, creates a self-signed HTTPS certificate, starts a low-privilege systemd service, verifies login and directory listing, and prints the final URL. A successful login uses a signed long-lived secure cookie, survives refreshes and service restarts, and remains valid until the user explicitly logs out.

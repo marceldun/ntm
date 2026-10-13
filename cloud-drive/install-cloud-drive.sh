@@ -36,9 +36,14 @@ esac
 [[ -d $DRIVE_ROOT ]] || fail "没有找到 $DRIVE_ROOT；请先完成游戏存档同步脚本。"
 
 printf '[1/5] 安装运行依赖……\n'
-export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get install -y --no-install-recommends python3 ca-certificates curl openssl
+if [[ ${GAME_DRIVE_SKIP_APT:-0} != 1 ]]; then
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update
+  apt-get install -y --no-install-recommends python3 ca-certificates curl openssl
+fi
+for dependency in python3 curl openssl; do
+  command -v "$dependency" >/dev/null || fail "缺少运行依赖：$dependency"
+done
 
 printf '[2/5] 下载并校验云盘程序……\n'
 TEMP_DIR=$(mktemp -d /tmp/game-save-drive.XXXXXX)

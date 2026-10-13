@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fresh VPS all-in-one installer: Syncthing auto-accept plus the web cloud drive.
-# Usage: sudo bash install-auto-sync-cloud.sh ANDROID_DEVICE_ID [WEB_USER] [WEB_PASSWORD]
+# Usage: sudo bash install-auto-sync-cloud.sh [ANDROID_DEVICE_ID] [WEB_USER] [WEB_PASSWORD]
 set -Eeuo pipefail
 umask 077
 
@@ -11,9 +11,9 @@ readonly APP_SERVICE='game-save-sync.service'
 readonly SYNC_ROOT="$APP_STATE/saves"
 readonly API_URL='http://127.0.0.1:8384'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/install-cloud-drive.sh'
-readonly CLOUD_INSTALLER_SHA='4857d28a8c256b3574e116b032104cf52483d7d723d70261a1d394b63326f666'
+readonly CLOUD_INSTALLER_SHA='398f1805f823b07c24d19382789441cd9e95b65381fb07fbd42380bc20322b44'
 
-ANDROID_ID="${1:-}"
+ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
 WEB_USER="${2:-marcel}"
 WEB_PASSWORD="${3:-456qwe456}"
 TEMP_DIR=''
@@ -38,10 +38,6 @@ case "${ID:-}:${VERSION_ID:-}" in
   *) fail "仅支持 Ubuntu 22.04/24.04 或 Debian 12/13；当前是 ${PRETTY_NAME:-未知系统}。" ;;
 esac
 
-if [[ -z $ANDROID_ID ]]; then
-  printf '在安卓 Syncthing-Fork 中打开“本机设备 ID”，复制后粘贴。\n'
-  read -r -p '安卓设备 ID: ' ANDROID_ID
-fi
 ANDROID_ID=${ANDROID_ID^^}
 [[ $ANDROID_ID =~ ^[A-Z2-7]{7}(-[A-Z2-7]{7}){7}$ ]] || \
   fail '安卓设备 ID 格式不对：必须是 8 组、每组 7 个字符。'
@@ -100,7 +96,7 @@ systemctl enable --now "$APP_SERVICE"
 
 printf '[4/7] 开启“手机分享后 VPS 永久自动接收”……\n'
 API_KEY=''
-for _ in $(seq 1 120); do
+for attempt in $(seq 1 120); do
   if [[ -s "$APP_STATE/config.xml" ]]; then
     API_KEY=$(python3 - "$APP_STATE/config.xml" <<'PY' 2>/dev/null || true
 import sys, xml.etree.ElementTree as ET
@@ -112,8 +108,10 @@ PY
       break
     fi
   fi
+  (( attempt % 10 == 0 )) && printf '.'
   sleep 0.5
 done
+printf '\n'
 [[ -n $API_KEY ]] || fail '60 秒内没有生成 Syncthing API 密钥。'
 curl -fsS --max-time 2 -H "X-API-Key: $API_KEY" "$API_URL/rest/system/status" >/dev/null || \
   fail '60 秒内 Syncthing API 没有启动。'
@@ -220,7 +218,7 @@ printf '%s  %s\n' "$CLOUD_INSTALLER_SHA" "$TEMP_DIR/install-cloud-drive.sh" | sh
 bash -n "$TEMP_DIR/install-cloud-drive.sh"
 
 printf '[6/7] 安装网页云盘……\n'
-bash "$TEMP_DIR/install-cloud-drive.sh" "$WEB_USER" "$WEB_PASSWORD"
+GAME_DRIVE_SKIP_APT=1 bash "$TEMP_DIR/install-cloud-drive.sh" "$WEB_USER" "$WEB_PASSWORD"
 
 printf '[7/7] 最终检查……\n'
 systemctl is-active --quiet "$APP_SERVICE" || fail '同步服务没有运行。'
