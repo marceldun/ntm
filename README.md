@@ -10,6 +10,16 @@ curl -fL --retry 3 https://raw.githubusercontent.com/marceldun/ntm/main/gamesave
 
 See [安卓最少步骤.md](安卓最少步骤.md) for the Android setup and the Android 12 limitation affecting AetherSX2 private storage.
 
+## Automatically accept any Android folder
+
+Run this once on an already paired VPS. It allows the VPS to automatically accept future folders shared by that Android device and place them below `/var/lib/game-save-sync/saves`, so no later SSH command is needed.
+
+```bash
+curl -fL --retry 3 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/enable-any-folder-sync.sh -o /tmp/enable-any-folder-sync.sh && echo '63ab0d5746035eda76a8841dce517c13a6e00d51f9c81fdecb193ce7e5a94f1f  /tmp/enable-any-folder-sync.sh' | sha256sum -c - && bash /tmp/enable-any-folder-sync.sh
+```
+
+For each new folder, add it in Syncthing-Fork on Android, select the local directory, check the paired VPS under shared devices, and save. Android requires this one-time directory selection to grant file access. The VPS then accepts it automatically and the web drive displays it without copying the data.
+
 ## Game Save Drive web interface
 
 The synchronized files live at `/var/lib/game-save-sync/saves`. The optional web interface exposes that same directory without duplicating data. It provides authenticated HTTPS, responsive desktop/mobile layouts, uploads, single and multi-select downloads, folder navigation, image previews, list/grid views, and modified-time sorting.
