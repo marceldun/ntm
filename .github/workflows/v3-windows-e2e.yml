@@ -50,7 +50,11 @@ jobs:
             }
             if (-not $serverStatus.myID) {
               $detail = @($serverLog,$serverStderr,$serverStdout) | ForEach-Object {
-                if (Test-Path $_) { "$(Split-Path $_ -Leaf): " + ((Get-Content $_ -Tail 4) -join ' / ') }
+                if (Test-Path $_) {
+                  $lastLines = @(Get-Content $_ -Tail 6)
+                  [array]::Reverse($lastLines)
+                  "$(Split-Path $_ -Leaf), newest first: " + ($lastLines -join ' / ')
+                }
               }
               throw ('test VPS peer did not start: ' + ($detail -join ' | '))
             }
