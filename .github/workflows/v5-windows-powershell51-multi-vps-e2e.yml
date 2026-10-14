@@ -119,6 +119,16 @@ jobs:
               for ($wait=0; $wait -lt 120; $wait++) { if ((Test-Path $target) -and ((Get-FileHash $source).Hash -eq (Get-FileHash $target).Hash)) { break }; Start-Sleep -Milliseconds 500 }
               if (-not (Test-Path $target)) { throw "file did not arrive at VPS $($server.Index)" }
               if ((Get-FileHash $source).Hash -ne (Get-FileHash $target).Hash) { throw "hash mismatch at VPS $($server.Index)" }
+
+              $serverSource = Join-Path ([string]$serverFolder.path) "from-vps-$($server.Index)-2MiB.bin"
+              $serverPayload = New-Object byte[] (2 * 1024 * 1024)
+              ([Random]::new(80 + $server.Index)).NextBytes($serverPayload)
+              [IO.File]::WriteAllBytes($serverSource, $serverPayload)
+              Invoke-RestMethod "$($server.Api)/rest/db/scan?folder=$($server.FolderId)" -Headers $server.Headers -Method Post | Out-Null
+              $clientTarget = Join-Path $expectedPath (Split-Path $serverSource -Leaf)
+              for ($wait=0; $wait -lt 120; $wait++) { if ((Test-Path $clientTarget) -and ((Get-FileHash $serverSource).Hash -eq (Get-FileHash $clientTarget).Hash)) { break }; Start-Sleep -Milliseconds 500 }
+              if (-not (Test-Path $clientTarget)) { throw "file did not download from VPS $($server.Index)" }
+              if ((Get-FileHash $serverSource).Hash -ne (Get-FileHash $clientTarget).Hash) { throw "download hash mismatch from VPS $($server.Index)" }
             }
             if (@($clientConfig.folders | Where-Object { $_.id -like 'pc-downloads-test-vps-*' }).Count -ne 2) { throw 'client did not retain both VPS folders' }
             if (-not (Test-Path (Join-Path ([Environment]::GetFolderPath('Startup')) 'VPS-Auto-Sync-v5.lnk'))) { throw 'startup shortcut missing' }
