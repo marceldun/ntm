@@ -80,10 +80,12 @@ jobs:
               $enroller = Start-Process $pythonExe -ArgumentList $enrollerArgs -RedirectStandardOutput $enrollerOut -RedirectStandardError $enrollerErr -PassThru -WindowStyle Hidden
               $servers += [pscustomobject]@{Index=$index;Root=$root;Files=$files;Api=$api;Headers=$headers;Status=$status;Process=$process;Enroller=$enroller;FolderId=$folderId;Label=$label;Token=$token;SyncPort=$syncPort}
             }
+            Write-Host '::warning title=V5 stage::Both test VPS peers started.'
 
             $installer = Join-Path $PWD 'v5-multi-vps-f-drive/windows-auto-sync-v5.ps1'
             foreach ($server in $servers) {
               & $installer -VpsDeviceId $server.Status.myID -EnrollmentToken $server.Token -VpsFolderId $server.FolderId -VpsLabel $server.Label -VpsAddress "tcp://127.0.0.1:$($server.SyncPort)"
+              Write-Host "::warning title=V5 stage::Imported VPS $($server.Index)."
             }
 
             $clientRoot = Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v5'
@@ -115,6 +117,7 @@ jobs:
             $chrome = Get-ItemProperty 'HKCU:\Software\Policies\Google\Chrome'
             if ($chrome.DownloadDirectory -ne "F:\新建文件夹\$($servers[1].Label)") { throw 'latest imported VPS is not the browser download folder' }
             Write-Host 'REAL WINDOWS V5 MULTI-VPS E2E PASSED: two peers, two named F-drive folders, startup, policy, enrollment, and byte-exact transfers.'
+            Write-Host '::warning title=V5 stage::All multi-VPS assertions passed.'
             $allChecksPassed = $true
             $global:LASTEXITCODE = 0
           } catch {
@@ -129,6 +132,7 @@ jobs:
             Start-Process subst.exe -ArgumentList @('F:','/D') -Wait -WindowStyle Hidden -ErrorAction SilentlyContinue
             $global:LASTEXITCODE = 0
             $ErrorActionPreference = $savedErrorAction
+            Write-Host "::warning title=V5 cleanup::passed=$allChecksPassed"
           }
           if (-not $allChecksPassed) { throw 'The multi-VPS assertions did not reach the success marker.' }
           exit 0
