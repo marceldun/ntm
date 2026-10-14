@@ -29,7 +29,7 @@ v2 在 Windows 输出下面两行后，会静默等待本地 Syncthing API：
 以 root 登录 VPS，执行：
 
 ```bash
-curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v3-windows-service-start-fix/install-vps-v3.sh -o /tmp/install-vps-v3.sh && echo '800d8ede4f13c02078b7896836639c56c2e09159d36c7f47197b1f851c0ecfa5  /tmp/install-vps-v3.sh' | sha256sum -c - && bash /tmp/install-vps-v3.sh
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v3-windows-service-start-fix/install-vps-v3.sh -o /tmp/install-vps-v3.sh && echo '09e1ae1dff48bd36fac6394f3512a12bafccaa0f7563a32728a2b7a8b2051279  /tmp/install-vps-v3.sh' | sha256sum -c - && bash /tmp/install-vps-v3.sh
 ```
 
 脚本没有输入问题，默认使用：

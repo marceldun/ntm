@@ -17,7 +17,7 @@ readonly ENROLLER_SHA='beb593c3410f1945edb6f160ac069071c3bedfcb3cb251d22424eadfe
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v3-windows-service-start-fix/cloud-drive/install-cloud-drive-v3.sh'
 readonly CLOUD_INSTALLER_SHA='c6d78984311bc264e17e772d2f96f016f075861e1ec3a44f90bb36ee78cea292'
 readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v3-windows-service-start-fix/windows-auto-sync-v3.ps1'
-readonly WINDOWS_SETUP_SHA='4be0ec0755000bafeb55228626eed1d8f8f654de0cd8b40e1ae2c58e06bf318d'
+readonly WINDOWS_SETUP_SHA='9c806ba42ad4dd4a1d5c9b9bee3ba41b07bbee2f8687692e36c8920824a46e6b'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
 WEB_USER="${2:-marcel}"
