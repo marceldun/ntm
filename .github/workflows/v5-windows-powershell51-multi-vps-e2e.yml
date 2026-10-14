@@ -37,7 +37,7 @@ jobs:
 
             for ($index = 1; $index -le 2; $index++) {
               $root = Join-Path $env:RUNNER_TEMP "v5-server-$index"
-              $home = Join-Path $root 'config'
+              $serverHome = Join-Path $root 'config'
               $files = Join-Path $root 'files'
               $tokenFile = Join-Path $root 'token'
               $log = Join-Path $root 'server.log'
@@ -50,11 +50,11 @@ jobs:
               $folderId = "pc-downloads-test-vps-$index"
               $label = "203.0.113.$($index)-Testland-$($index)0GB"
               $token = if ($index -eq 1) { '0123456789abcdef0123456789abcdef' } else { 'fedcba9876543210fedcba9876543210' }
-              New-Item -ItemType Directory -Path $home,$files -Force | Out-Null
-              & $serverExe generate "--home=$home" | Out-Null
-              $args = "serve --home=`"$home`" --no-browser --no-restart --no-upgrade --no-default-folder --gui-address=127.0.0.1:$guiPort --logfile=`"$log`" --logflags=0"
+              New-Item -ItemType Directory -Path $serverHome,$files -Force | Out-Null
+              & $serverExe generate "--home=$serverHome" | Out-Null
+              $args = "serve --home=`"$serverHome`" --no-browser --no-restart --no-upgrade --no-default-folder --gui-address=127.0.0.1:$guiPort --logfile=`"$log`" --logflags=0"
               $process = Start-Process $serverExe -WorkingDirectory $root -ArgumentList $args -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru -WindowStyle Hidden
-              [xml]$xml = Get-Content (Join-Path $home 'config.xml')
+              [xml]$xml = Get-Content (Join-Path $serverHome 'config.xml')
               $headers = @{'X-API-Key'=[string]$xml.configuration.gui.apikey}
               $api = "http://127.0.0.1:$guiPort"
               $status = $null
@@ -74,7 +74,7 @@ jobs:
               $config.options.reconnectionIntervalS = 2
               Invoke-RestMethod "$api/rest/config" -Headers $headers -Method Put -ContentType 'application/json' -Body ($config | ConvertTo-Json -Depth 50 -Compress) | Out-Null
               $token | Set-Content $tokenFile -Encoding ASCII
-              $configXml = Join-Path $home 'config.xml'
+              $configXml = Join-Path $serverHome 'config.xml'
               $enrollerArgs = "`"$enrollerScript`" --config `"$configXml`" --token `"$tokenFile`" --root `"$files`" --android $android --folder-id $folderId --folder-label $label --api $api"
               $enroller = Start-Process $pythonExe -ArgumentList $enrollerArgs -RedirectStandardOutput $enrollerOut -RedirectStandardError $enrollerErr -PassThru -WindowStyle Hidden
               $servers += [pscustomobject]@{Index=$index;Root=$root;Files=$files;Api=$api;Headers=$headers;Status=$status;Process=$process;Enroller=$enroller;FolderId=$folderId;Label=$label;Token=$token;SyncPort=$syncPort}
