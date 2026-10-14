@@ -141,7 +141,7 @@ $self.name = "PC-$EnrollmentToken"
 
 $vps = @($config.devices) | Where-Object { $_.deviceID -eq $VpsDeviceId } | Select-Object -First 1
 if (-not $vps) {
-    $vps = [pscustomobject]@{deviceID=$VpsDeviceId; name='VPS'; addresses=@($VpsAddress); compression='metadata'}
+    $vps = [pscustomobject]@{deviceID=$VpsDeviceId; name='VPS'; addresses=@($VpsAddress); compression='metadata'; paused=$false}
     $config.devices = @($config.devices) + $vps
 }
 $vps.addresses = @($VpsAddress)
