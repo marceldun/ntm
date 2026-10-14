@@ -17,7 +17,7 @@ readonly ENROLLER_SHA='beb593c3410f1945edb6f160ac069071c3bedfcb3cb251d22424eadfe
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v2-port-connectivity-fix/cloud-drive/install-cloud-drive-v2.sh'
 readonly CLOUD_INSTALLER_SHA='90a7898dd2239bf0b326b948f6bdc682365d8b50979836fc2d814f9a45280ac5'
 readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v2-port-connectivity-fix/windows-auto-sync-v2.ps1'
-readonly WINDOWS_SETUP_SHA='93058bb872d2050b27b015a9f1b08c34edc03e19eedc1acf192a28550bde1e8c'
+readonly WINDOWS_SETUP_SHA='f4bad1a0d9d94543690dc810442900db8713a9e4c9b55ff4731ab7fedb983ba7'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
 WEB_USER="${2:-marcel}"

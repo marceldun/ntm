@@ -24,7 +24,7 @@ v2 的电脑自动同步不再使用 443/8443。Windows 和 VPS 通过 Syncthing
 使用 root 登录 VPS 后执行：
 
 ```bash
-curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v2-port-connectivity-fix/install-vps-v2.sh -o /tmp/install-vps-v2.sh && echo 'c1802078d5d24c797adde752abefb897f70bdfa78482142cf613448c70843828  /tmp/install-vps-v2.sh' | sha256sum -c - && bash /tmp/install-vps-v2.sh
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v2-port-connectivity-fix/install-vps-v2.sh -o /tmp/install-vps-v2.sh && echo 'f5ca2e821d08a3185efff235b43661d81ad8cf832295cb24774b95d244f71d26  /tmp/install-vps-v2.sh' | sha256sum -c - && bash /tmp/install-vps-v2.sh
 ```
 
 脚本不会询问用户名、密码或设备 ID。默认值为：

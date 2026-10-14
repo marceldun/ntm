@@ -130,6 +130,7 @@ foreach ($policy in @('HKCU:\Software\Policies\Google\Chrome','HKCU:\Software\Po
     New-ItemProperty -Path $policy -Name DownloadDirectory -PropertyType String -Value $DownloadPath -Force | Out-Null
     New-ItemProperty -Path $policy -Name PromptForDownloadLocation -PropertyType DWord -Value 0 -Force | Out-Null
 }
+& gpupdate.exe '/Target:User' '/Force' | Out-Null
 & net.exe use 'V:' /delete /y 2>$null | Out-Null
 
 Write-Host -NoNewline '[4/6] Waiting for the secure VPS connection'
@@ -171,4 +172,4 @@ Write-Host ''
 Write-Host '[6/6] Complete.'
 Write-Host 'V2 setup passed: PC -> VPS automatic synchronization is working.' -ForegroundColor Green
 Write-Host "Automatic browser download folder: $DownloadPath"
-Write-Host 'Close and reopen Chrome or Edge once.'
+Write-Host 'Chrome and Edge download policy refresh was requested automatically.'
