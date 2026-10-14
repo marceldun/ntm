@@ -83,12 +83,17 @@ jobs:
             [xml]$clientXml = Get-Content (Join-Path $clientRoot 'config/config.xml')
             $clientHeaders = @{'X-API-Key'=[string]$clientXml.configuration.gui.apikey}
             $clientApi = "http://127.0.0.1:$clientPort"
+            $clientStatus = Invoke-RestMethod "$clientApi/rest/system/status" -Headers $clientHeaders
+            $serverConfigAfter = Invoke-RestMethod 'http://127.0.0.1:38384/rest/config' -Headers $serverHeaders
+            $serverFolderAfter = @($serverConfigAfter.folders) | Where-Object { $_.id -eq 'pc-downloads' } | Select-Object -First 1
+            if (-not $serverFolderAfter) { throw 'VPS pc-downloads folder is missing after enrollment' }
+            if (@($serverFolderAfter.devices.deviceID) -notcontains $clientStatus.myID) { throw 'VPS folder was not shared with the enrolled Windows device' }
             $source = Join-Path $env:USERPROFILE 'Downloads/VPS-Auto-Sync/windows-runner-2MiB.bin'
             $payload = New-Object byte[] (2 * 1024 * 1024)
             ([Random]::new(42)).NextBytes($payload)
             [IO.File]::WriteAllBytes($source, $payload)
             Invoke-RestMethod "$clientApi/rest/db/scan?folder=pc-downloads" -Headers $clientHeaders -Method Post | Out-Null
-            $target = Join-Path (Join-Path $serverFiles $folderLabel) 'windows-runner-2MiB.bin'
+            $target = Join-Path ([string]$serverFolderAfter.path) 'windows-runner-2MiB.bin'
             for ($i=0; $i -lt 120; $i++) { if (Test-Path $target) { if ((Get-FileHash $source).Hash -eq (Get-FileHash $target).Hash) { break } }; Start-Sleep -Milliseconds 500 }
             if (-not (Test-Path $target)) { throw 'Windows to VPS file did not arrive' }
             if ((Get-FileHash $source).Hash -ne (Get-FileHash $target).Hash) { throw 'Windows to VPS file hash mismatch' }
