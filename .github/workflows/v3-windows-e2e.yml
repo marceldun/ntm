@@ -82,7 +82,8 @@ jobs:
             if ($chrome.DownloadDirectory -ne (Split-Path $source)) { throw 'browser download policy mismatch' }
             Write-Host 'REAL WINDOWS V3 E2E PASSED: startup, dynamic GUI port, enrollment, browser policy, and 2 MiB transfer.'
           } catch {
-            $failure = ($_ | Out-String).Trim()
+            $failure = [string]$_.Exception.Message
+            $failure = $failure.Replace("`r", ' ').Replace("`n", ' ')
             Write-Host "::error title=V3 Windows E2E failure::$failure"
             foreach ($log in @(
               (Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v3/syncthing-v3.log'),
@@ -108,4 +109,4 @@ jobs:
         with:
           name: v3-windows-logs
           path: |
-            ~/AppData/Local/VPS-Auto-Sync-v3/*.log
+            C:/Users/runneradmin/AppData/Local/VPS-Auto-Sync-v3/*.log
