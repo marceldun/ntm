@@ -55,3 +55,7 @@ curl -fL --retry 3 https://raw.githubusercontent.com/marceldun/ntm/main/cloud-dr
 ```
 
 The installer stores only a PBKDF2 password hash, creates a self-signed HTTPS certificate, starts a low-privilege systemd service, verifies login and directory listing, and prints the final URL. A successful login uses a signed long-lived secure cookie, survives refreshes and service restarts, and remains valid until the user explicitly logs out.
+
+## V2: Windows cannot reach VPS ports 443/8443
+
+The complete v2 copy is kept under [`v2-port-connectivity-fix`](v2-port-connectivity-fix/README-v2-443-8443-connectivity-fix.md). It replaces Windows WebDAV transport with authenticated Syncthing direct/relay transport, supports files larger than 4 GB, and retains the original v1 files unchanged.
