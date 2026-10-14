@@ -16,7 +16,7 @@ readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v4-w
 readonly ENROLLER_SHA='beb593c3410f1945edb6f160ac069071c3bedfcb3cb251d22424eadfe6028a24'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v4-windows-powershell51-fix/cloud-drive/install-cloud-drive-v4.sh'
 readonly CLOUD_INSTALLER_SHA='6affebba1d3a2af90171cf8081a69febd4e2c4d9c46dc6645c0eac79be1662a5'
-readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v4-windows-powershell51-fix/windows-auto-sync-v4.ps1'
+readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/3bbdc2cca5570bfb6f69ceeb6f1a91f9d1f99e45/v4-windows-powershell51-fix/windows-auto-sync-v4.ps1'
 readonly WINDOWS_SETUP_SHA='54ed8770f3f47fda8721037b12d1d6a181384bbc96a6431129b3c5173b4ad885'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
