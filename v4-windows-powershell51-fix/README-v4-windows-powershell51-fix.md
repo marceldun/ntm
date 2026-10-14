@@ -31,7 +31,7 @@ v3 在中文 Windows PowerShell 5.1 执行到第 4 步时，`net.exe` 的“找�
 以 root 登录 VPS，执行：
 
 ```bash
-curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v4-windows-powershell51-fix/install-vps-v4.sh -o /tmp/install-vps-v4.sh && echo '7700aa73dcd05077e850ea326d7d797a47b60a00656255babbb9edbfa87a7133  /tmp/install-vps-v4.sh' | sha256sum -c - && bash /tmp/install-vps-v4.sh
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v4-windows-powershell51-fix/install-vps-v4.sh -o /tmp/install-vps-v4.sh && echo 'fbc7bea0c6b05f6406de0afbf39d4cccae9af10c3da8eccd001853b51f939496  /tmp/install-vps-v4.sh' | sha256sum -c - && bash /tmp/install-vps-v4.sh
 ```
 
 脚本没有输入问题，默认使用：

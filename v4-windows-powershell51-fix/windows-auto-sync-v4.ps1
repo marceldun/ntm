@@ -74,10 +74,15 @@ function Get-StartupFailureText {
     return ($lines -join [Environment]::NewLine)
 }
 
-$oldRoot = Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v2'
+$oldRoots = @(
+    (Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v2'),
+    (Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v3')
+)
 Get-Process -Name syncthing -ErrorAction SilentlyContinue | ForEach-Object {
     try {
-        if ($_.Path -like "$oldRoot\*") { Stop-Process -Id $_.Id -Force }
+        foreach ($oldRoot in $oldRoots) {
+            if ($_.Path -like "$oldRoot\*") { Stop-Process -Id $_.Id -Force; break }
+        }
     } catch {}
 }
 
@@ -178,6 +183,9 @@ Invoke-RestMethod -Uri "$Api/rest/config" -Headers $headers -Method Put -Content
 
 Write-Host '[4/7] Enabling startup and the Chrome/Edge download folder...'
 $startup = [Environment]::GetFolderPath('Startup')
+@('VPS-Auto-Sync-v2.lnk','VPS-Auto-Sync-v3.lnk') | ForEach-Object {
+    Remove-Item -LiteralPath (Join-Path $startup $_) -Force -ErrorAction SilentlyContinue
+}
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut((Join-Path $startup 'VPS-Auto-Sync-v4.lnk'))
 $shortcut.TargetPath = $ExePath
