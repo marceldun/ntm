@@ -122,12 +122,16 @@ jobs:
             Write-Host "::error title=V5 Windows multi-VPS E2E failure::$failure"
             throw
           } finally {
+            $savedErrorAction = $ErrorActionPreference
+            $ErrorActionPreference = 'SilentlyContinue'
             Get-Process syncthing -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
             foreach ($server in $servers) { if ($server.Enroller) { Stop-Process -Id $server.Enroller.Id -Force -ErrorAction SilentlyContinue } }
             Start-Process subst.exe -ArgumentList @('F:','/D') -Wait -WindowStyle Hidden -ErrorAction SilentlyContinue
             $global:LASTEXITCODE = 0
+            $ErrorActionPreference = $savedErrorAction
           }
-          if ($allChecksPassed) { exit 0 }
+          if (-not $allChecksPassed) { throw 'The multi-VPS assertions did not reach the success marker.' }
+          exit 0
 
       - name: Upload V5 logs on failure
         if: failure()
