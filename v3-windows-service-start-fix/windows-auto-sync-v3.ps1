@@ -215,7 +215,7 @@ $replicated = $false
 for ($attempt = 0; $attempt -lt 120; $attempt++) {
     try {
         $completion = Invoke-RestMethod -Uri "$Api/rest/db/completion?device=$VpsDeviceId&folder=$FolderId" -Headers $headers
-        if ($completion.globalFiles -ge 1 -and $completion.completion -ge 100) { $replicated = $true; break }
+        if ($completion.globalItems -ge 1 -and $completion.completion -ge 100) { $replicated = $true; break }
     } catch {}
     if (($attempt + 1) % 10 -eq 0) { Write-Host -NoNewline '.' }
     Start-Sleep -Seconds 1
