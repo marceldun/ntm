@@ -81,6 +81,21 @@ jobs:
             $chrome = Get-ItemProperty 'HKCU:\Software\Policies\Google\Chrome'
             if ($chrome.DownloadDirectory -ne (Split-Path $source)) { throw 'browser download policy mismatch' }
             Write-Host 'REAL WINDOWS V3 E2E PASSED: startup, dynamic GUI port, enrollment, browser policy, and 2 MiB transfer.'
+          } catch {
+            $failure = ($_ | Out-String).Trim()
+            Write-Host "::error title=V3 Windows E2E failure::$failure"
+            foreach ($log in @(
+              (Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v3/syncthing-v3.log'),
+              (Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v3/syncthing-v3.stdout.log'),
+              (Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v3/syncthing-v3.stderr.log'),
+              (Join-Path $serverRoot 'server.log')
+            )) {
+              if (Test-Path $log) {
+                Write-Host "===== $log ====="
+                Get-Content $log -Tail 100
+              }
+            }
+            throw
           } finally {
             Get-Process syncthing -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
             if ($enrollerProcess) { Stop-Process -Id $enrollerProcess.Id -Force -ErrorAction SilentlyContinue }
@@ -94,4 +109,3 @@ jobs:
           name: v3-windows-logs
           path: |
             ~/AppData/Local/VPS-Auto-Sync-v3/*.log
-            ${{ runner.temp }}/syncthing-v3-e2e-server/*.log
