@@ -75,7 +75,8 @@ jobs:
             '0123456789abcdef0123456789abcdef' | Set-Content $tokenFile -Encoding ASCII
             $enrollerScript = Join-Path $PWD 'v3-windows-service-start-fix/device-enroller-v3.py'
             $pythonExe = (Get-Command python.exe).Source
-            $enrollerArgs = "`"$enrollerScript`" --config `"$serverHome`" --token `"$tokenFile`" --root `"$serverFiles`" --android $android --api http://127.0.0.1:38384"
+            $serverConfigXml = Join-Path $serverHome 'config.xml'
+            $enrollerArgs = "`"$enrollerScript`" --config `"$serverConfigXml`" --token `"$tokenFile`" --root `"$serverFiles`" --android $android --api http://127.0.0.1:38384"
             $enrollerProcess = Start-Process $pythonExe -ArgumentList $enrollerArgs -RedirectStandardOutput $enrollerStdout -RedirectStandardError $enrollerStderr -PassThru -WindowStyle Hidden
             & (Join-Path $PWD 'v3-windows-service-start-fix/windows-auto-sync-v3.ps1') -VpsDeviceId $serverStatus.myID -EnrollmentToken '0123456789abcdef0123456789abcdef' -VpsAddress 'tcp://127.0.0.1:32000'
 
