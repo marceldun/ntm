@@ -104,7 +104,7 @@ if (-not $serviceOnline) {
         $Api = "http://127.0.0.1:$GuiPort"
         @($LogPath,$StdoutPath,$StderrPath) | ForEach-Object { Remove-Item -LiteralPath $_ -Force -ErrorAction SilentlyContinue }
         $argumentList = @(
-            'serve','--home=config','--no-browser','--no-restart','--no-default-folder',
+            'serve','--home=config','--no-browser','--no-restart','--no-upgrade','--no-default-folder',
             "--gui-address=127.0.0.1:$GuiPort",'--logfile=syncthing-v3.log','--log-max-old-files=0','--logflags=0'
         )
         $process = Start-Process -FilePath $ExePath -WorkingDirectory $InstallRoot -ArgumentList $argumentList `
@@ -132,7 +132,7 @@ if (-not $serviceOnline) {
 if (-not $serviceOnline) { throw ("Local Syncthing failed to start.`n" + (Get-StartupFailureText)) }
 
 Write-Host '[3/7] Local service is running; applying the sync configuration...'
-$arguments = "serve --home=config --no-browser --no-restart --no-default-folder --gui-address=127.0.0.1:$($Api.Split(':')[-1]) --logfile=syncthing-v3.log --log-max-old-files=0 --logflags=0"
+$arguments = "serve --home=config --no-browser --no-restart --no-upgrade --no-default-folder --gui-address=127.0.0.1:$($Api.Split(':')[-1]) --logfile=syncthing-v3.log --log-max-old-files=0 --logflags=0"
 
 $config = Invoke-RestMethod -Uri "$Api/rest/config" -Headers $headers
 $self = @($config.devices) | Where-Object { $_.deviceID -eq $status.myID } | Select-Object -First 1

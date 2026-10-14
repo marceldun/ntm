@@ -37,7 +37,7 @@ jobs:
             Expand-Archive -LiteralPath $archive -DestinationPath $extract -Force
             $serverExe = (Get-ChildItem $extract -Filter syncthing.exe -Recurse | Select-Object -First 1).FullName
             & $serverExe generate "--home=$serverHome" | Out-Null
-            $serverArgs = "serve --home=`"$serverHome`" --no-browser --no-restart --no-default-folder --gui-address=127.0.0.1:38384 --logfile=`"$serverLog`" --logflags=0"
+            $serverArgs = "serve --home=`"$serverHome`" --no-browser --no-restart --no-upgrade --no-default-folder --gui-address=127.0.0.1:38384 --logfile=`"$serverLog`" --logflags=0"
             $serverProcess = Start-Process $serverExe -WorkingDirectory $serverRoot -ArgumentList $serverArgs -RedirectStandardOutput $serverStdout -RedirectStandardError $serverStderr -PassThru -WindowStyle Hidden
             [xml]$serverXml = Get-Content (Join-Path $serverHome 'config.xml')
             $serverKey = [string]$serverXml.configuration.gui.apikey
