@@ -25,6 +25,9 @@ jobs:
           $serverHome = Join-Path $serverRoot 'config'
           $serverFiles = Join-Path $serverRoot 'files'
           $tokenFile = Join-Path $serverRoot 'token'
+          $serverLog = Join-Path $serverRoot 'server.log'
+          $serverStdout = Join-Path $serverRoot 'server.stdout.log'
+          $serverStderr = Join-Path $serverRoot 'server.stderr.log'
           $serverProcess = $null
           $enrollerProcess = $null
           try {
@@ -34,15 +37,21 @@ jobs:
             Expand-Archive -LiteralPath $archive -DestinationPath $extract -Force
             $serverExe = (Get-ChildItem $extract -Filter syncthing.exe -Recurse | Select-Object -First 1).FullName
             & $serverExe generate "--home=$serverHome" | Out-Null
-            $serverProcess = Start-Process $serverExe -WorkingDirectory $serverRoot -ArgumentList @('serve','--home=config','--no-browser','--no-restart','--no-default-folder','--gui-address=127.0.0.1:38384','--logfile=server.log','--logflags=0') -PassThru -WindowStyle Hidden
+            $serverArgs = "serve --home=`"$serverHome`" --no-browser --no-restart --no-default-folder --gui-address=127.0.0.1:38384 --logfile=`"$serverLog`" --logflags=0"
+            $serverProcess = Start-Process $serverExe -WorkingDirectory $serverRoot -ArgumentList $serverArgs -RedirectStandardOutput $serverStdout -RedirectStandardError $serverStderr -PassThru -WindowStyle Hidden
             [xml]$serverXml = Get-Content (Join-Path $serverHome 'config.xml')
             $serverKey = [string]$serverXml.configuration.gui.apikey
             $serverHeaders = @{'X-API-Key'=$serverKey}
             for ($i=0; $i -lt 60; $i++) {
               try { $serverStatus = Invoke-RestMethod 'http://127.0.0.1:38384/rest/system/status' -Headers $serverHeaders -TimeoutSec 2; if ($serverStatus.myID) { break } } catch {}
+              $serverProcess.Refresh()
+              if ($serverProcess.HasExited) { break }
               Start-Sleep -Milliseconds 500
             }
-            if (-not $serverStatus.myID) { throw 'test VPS peer did not start' }
+            if (-not $serverStatus.myID) {
+              $detail = @($serverStdout,$serverStderr,$serverLog) | ForEach-Object { if (Test-Path $_) { Get-Content $_ -Tail 20 } }
+              throw ('test VPS peer did not start: ' + ($detail -join ' | '))
+            }
             $android = 'XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3'
             $folderLabel = ([char]0x7535)+([char]0x8111)+([char]0x4E0B)+([char]0x8F7D)
             $serverConfig = Invoke-RestMethod 'http://127.0.0.1:38384/rest/config' -Headers $serverHeaders
