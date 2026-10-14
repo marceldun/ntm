@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7f9fc">
+  <title>Game Save Drive</title>
+  <style>
+    :root{--blue:#0b57d0;--blue2:#c2e7ff;--ink:#1f1f1f;--muted:#5f6368;--line:#dadce0;--bg:#f7f9fc;--card:#fff;--hover:#f0f4f9;--selected:#c2e7ff;--shadow:0 1px 2px #3c40431a,0 1px 3px 1px #3c404326}
+    *{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Arial,"Noto Sans SC",sans-serif;color:var(--ink);background:var(--bg)}button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+    .boot{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:100}.boot-card{display:grid;justify-items:center;gap:18px;color:var(--muted)}.boot-spin{width:34px;height:34px;border:4px solid #d3e3fd;border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    .login{min-height:100%;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 20% 0,#d7edff 0,transparent 35%),var(--bg)}
+    .login-card{width:min(430px,100%);background:#fff;border:1px solid var(--line);border-radius:28px;padding:38px;box-shadow:var(--shadow)}
+    .brand{display:flex;align-items:center;gap:13px;font-size:21px;color:#444}.brandmark{width:42px;height:36px;position:relative}.brandmark:before,.brandmark:after{content:"";position:absolute;border-radius:7px}.brandmark:before{width:29px;height:29px;background:#0b57d0;transform:rotate(45deg);left:7px;top:2px}.brandmark:after{width:24px;height:16px;background:#8ab4f8;left:9px;top:13px;border:4px solid #fff}
+    .login h1{font-size:29px;font-weight:500;margin:34px 0 8px}.login p{color:var(--muted);line-height:1.5;margin:0 0 26px}.field{position:relative;margin:14px 0}.field input{width:100%;height:56px;border:1px solid #747775;border-radius:8px;padding:18px 14px 7px;outline:none}.field label{position:absolute;left:14px;top:18px;color:var(--muted);pointer-events:none;transition:.15s;background:#fff;padding:0 4px}.field input:focus{border:2px solid var(--blue)}.field input:focus+label,.field input:not(:placeholder-shown)+label{top:-8px;font-size:12px;color:var(--blue)}
+    .primary{border:0;border-radius:22px;background:var(--blue);color:#fff;padding:11px 24px;font-weight:600}.login .primary{float:right;margin-top:12px}.login-error{min-height:20px;color:#b3261e;font-size:14px;margin-top:8px}
+    .app{height:100%;display:grid;grid-template-columns:256px 1fr;grid-template-rows:72px 1fr}.topbar{grid-column:1/3;display:grid;grid-template-columns:256px minmax(260px,720px) 1fr;align-items:center;padding:8px 18px 8px 20px;gap:22px}.topbar .brand{font-size:20px}.search{height:48px;background:#e9eef6;border-radius:24px;display:flex;align-items:center;padding:0 16px;gap:12px}.search input{border:0;background:transparent;outline:none;width:100%;font-size:16px}.icon{border:0;background:transparent;border-radius:50%;width:40px;height:40px;display:grid;place-items:center;color:#444;font-size:21px}.icon:hover{background:#e2e7ee}.account{justify-self:end;display:flex;align-items:center;gap:8px}.avatar{background:#7b1fa2;color:white;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:bold}
+    .sidebar{padding:12px 14px 24px}.new-btn{height:56px;border:0;border-radius:16px;background:#fff;box-shadow:var(--shadow);padding:0 20px;display:flex;align-items:center;gap:13px;font-weight:600;margin:0 0 18px}.new-btn b{font-size:28px;font-weight:300;color:var(--blue)}.nav{display:flex;align-items:center;gap:16px;height:40px;border-radius:20px;padding:0 18px;font-size:14px}.nav.active{background:var(--blue2);font-weight:600}.storage{border-top:1px solid var(--line);margin-top:22px;padding:20px 18px;color:var(--muted);font-size:13px;line-height:1.6}
+    main{min-width:0;background:#fff;border-radius:18px 0 0 0;overflow:hidden;display:flex;flex-direction:column}.mainhead{height:68px;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}.titleblock{min-width:0}.titleblock h1{font-size:22px;font-weight:500;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.crumbs{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:auto}.crumbs button{border:0;background:none;color:var(--blue);padding:0}.tools{display:flex;align-items:center;gap:8px}.tools select{height:40px;border:1px solid var(--line);border-radius:20px;padding:0 31px 0 14px;background:white}.seg{border:1px solid var(--line);border-radius:22px;display:flex;padding:2px}.seg button{border:0;background:white;width:40px;height:34px;border-radius:18px}.seg button.active{background:var(--blue2)}
+    .selection{margin:0 22px 10px;height:48px;background:#edf4ff;border-radius:12px;display:flex;align-items:center;gap:12px;padding:0 14px;color:#0842a0}.selection .spacer{flex:1}.outline{height:36px;border:1px solid #747775;background:#fff;border-radius:18px;padding:0 16px;color:#174ea6}.content{flex:1;overflow:auto;padding:0 22px 80px}.empty{height:60%;display:grid;place-items:center;text-align:center;color:var(--muted)}.empty .big{font-size:64px;opacity:.5;margin-bottom:12px}
+    .list-head,.file-row{display:grid;grid-template-columns:42px minmax(220px,1fr) 180px 110px;align-items:center;min-height:48px;border-bottom:1px solid #eee}.list-head{color:var(--muted);font-size:12px;position:sticky;top:0;background:#fff;z-index:2}.file-row{font-size:14px}.file-row:hover{background:var(--hover)}.file-row.selected{background:#d3e3fd}.check{width:18px;height:18px;accent-color:var(--blue)}.namecell{display:flex;align-items:center;gap:12px;min-width:0}.namebtn{border:0;background:none;text-align:left;padding:10px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:inherit}.namebtn:hover{text-decoration:underline}.fileicon{width:28px;height:28px;border-radius:6px;background:#d3e3fd;display:grid;place-items:center;color:#0b57d0;flex:0 0 auto}.foldericon{background:#fdd663;color:#7a5200}.muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}.card{position:relative;background:#f0f4f9;border:2px solid transparent;border-radius:14px;overflow:hidden;min-height:196px}.card:hover{background:#e7ebf1}.card.selected{border-color:var(--blue);background:#d3e3fd}.card .check{position:absolute;z-index:2;top:12px;right:12px}.preview{height:138px;background:#fff;margin:38px 8px 0;border-radius:9px 9px 0 0;display:grid;place-items:center;overflow:hidden}.preview img{width:100%;height:100%;object-fit:cover}.preview .largeicon{font-size:48px}.cardname{height:52px;display:flex;align-items:center;gap:9px;padding:0 13px}.cardname .namebtn{font-weight:600;flex:1}.carddate{display:none}
+    .fab{display:none;position:fixed;right:20px;bottom:78px;width:58px;height:58px;border:0;border-radius:18px;background:var(--blue2);box-shadow:var(--shadow);font-size:28px;color:#0842a0;z-index:5}.bottomnav{display:none}.progress{position:fixed;left:0;right:0;top:0;height:4px;background:transparent;z-index:30}.progress div{height:100%;background:var(--blue);width:0;transition:width .2s}.toast{position:fixed;left:50%;bottom:25px;transform:translateX(-50%);background:#303030;color:white;padding:12px 18px;border-radius:8px;z-index:50;box-shadow:var(--shadow);max-width:min(90vw,540px)}
+    dialog{border:0;border-radius:24px;padding:26px;width:min(420px,90vw);box-shadow:0 8px 30px #0003}dialog::backdrop{background:#0005}dialog h2{margin:0 0 20px;font-weight:500}dialog input{width:100%;height:50px;border:1px solid #777;border-radius:8px;padding:0 13px}dialog menu{display:flex;justify-content:flex-end;gap:10px;padding:20px 0 0;margin:0}dialog button{border:0;background:transparent;padding:10px 16px;border-radius:20px;color:var(--blue);font-weight:600}dialog button.confirm{background:var(--blue);color:white}
+    @media(max-width:760px){.app{display:block;padding-top:64px}.topbar{position:fixed;z-index:10;top:0;left:0;right:0;height:64px;display:flex;padding:8px 12px;background:var(--bg)}.topbar .brand{display:none}.search{flex:1;height:48px;background:#fff;box-shadow:var(--shadow)}.account{display:none}.sidebar{display:none}main{height:calc(100vh - 64px);border-radius:18px 18px 0 0}.mainhead{height:auto;min-height:72px;padding:14px 16px}.titleblock h1{font-size:20px}.tools select{max-width:122px}.seg{display:none}.content{padding:0 12px 100px}.list-head{grid-template-columns:38px 1fr 82px}.list-head span:nth-child(3){display:none}.file-row{grid-template-columns:38px minmax(0,1fr) 82px;min-height:58px}.file-row .date{display:none}.file-row .size{text-align:right;font-size:12px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{min-height:160px}.preview{height:104px}.cardname{padding:0 9px}.selection{margin:0 12px 9px}.selection .label{display:none}.fab{display:block}.bottomnav{display:flex;position:fixed;z-index:8;bottom:0;left:0;right:0;height:64px;background:#f7f9fc;border-top:1px solid #e2e5e9;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom)}.bottomnav button{border:0;background:none;color:var(--muted);font-size:11px;display:grid;place-items:center;gap:1px}.bottomnav b{font-size:22px;color:var(--blue)}.toast{bottom:76px}.login-card{padding:30px 24px;border-radius:24px}.login h1{font-size:26px}}
+  </style>
+</head>
+<body>
+  <section id="boot" class="boot"><div class="boot-card"><span class="brandmark"></span><div class="boot-spin"></div></div></section>
+  <section id="login" class="login hidden">
+    <form id="loginForm" class="login-card">
+      <div class="brand"><span class="brandmark"></span><span>Game Save Drive</span></div>
+      <h1>登录云端存档</h1><p>查看、上传和下载你的模拟器存档。</p>
+      <div class="field"><input id="username" autocomplete="username" placeholder=" " value="marcel" required><label>用户名</label></div>
+      <div class="field"><input id="password" type="password" autocomplete="current-password" placeholder=" " required><label>密码</label></div>
+      <div id="loginError" class="login-error"></div><button class="primary" type="submit">登录</button><div style="clear:both"></div>
+    </form>
+  </section>
+
+  <section id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand"><span class="brandmark"></span><span>Game Save Drive</span></div>
+      <label class="search"><span>⌕</span><input id="search" placeholder="在存档中搜索"></label>
+      <div class="account"><button id="logout" class="icon" title="退出">↪</button><span class="avatar">M</span></div>
+    </header>
+    <aside class="sidebar">
+      <button class="new-btn" data-upload><b>＋</b>上传文件</button>
+      <div class="nav active"><span>▰</span>我的存档</div>
+      <div class="nav"><span>◷</span>最近修改</div>
+      <div class="storage">☁ 云端位置<br><b>/var/lib/game-save-sync/saves</b><br>与 Syncthing 使用同一份文件</div>
+    </aside>
+    <main>
+      <div class="mainhead">
+        <div class="titleblock"><h1 id="folderTitle">我的存档</h1><div id="crumbs" class="crumbs"></div></div>
+        <div class="tools">
+          <select id="sort"><option value="modified-desc">最新文件</option><option value="modified-asc">最早文件</option><option value="name-asc">名称 A–Z</option><option value="name-desc">名称 Z–A</option></select>
+          <div class="seg"><button id="listView" class="active" title="列表">☷</button><button id="gridView" title="大图">▦</button></div>
+        </div>
+      </div>
+      <div id="selection" class="selection hidden"><b id="selectedCount">已选择 0 项</b><span class="label">可一次下载多个文件和文件夹</span><span class="spacer"></span><button id="downloadSelected" class="outline">下载</button><button id="clearSelection" class="icon">×</button></div>
+      <div id="content" class="content"></div>
+    </main>
+    <button class="fab" data-upload title="上传">＋</button>
+    <nav class="bottomnav"><button><b>▰</b>文件</button><button id="mobileNewFolder"><b>□</b>新建文件夹</button><button id="mobileLogout"><b>↪</b>退出</button></nav>
+  </section>
+  <input id="fileInput" class="hidden" type="file" multiple>
+  <div class="progress"><div id="progressBar"></div></div>
+  <div id="toast" class="toast hidden"></div>
+  <dialog id="folderDialog"><form method="dialog"><h2>新建文件夹</h2><input id="folderName" placeholder="文件夹名称" required><menu><button value="cancel">取消</button><button id="createFolder" class="confirm" value="default">创建</button></menu></form></dialog>
+
+  <script>
+    const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+    const state={path:'',entries:[],selected:new Set(),view:localStorage.view||'list',query:''};
+    const api=async(url,opt={})=>{const r=await fetch(url,opt);if(r.status===401){showLogin();throw Error('请重新登录')}const type=r.headers.get('content-type')||'';const data=type.includes('json')?await r.json():await r.blob();if(!r.ok)throw Error(data.error||'请求失败');return data};
+    const enc=s=>encodeURIComponent(s), join=(a,b)=>a?a+'/'+b:b;
+    function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(t.timer);t.timer=setTimeout(()=>t.classList.add('hidden'),3000)}
+    function showLogin(){ $('#boot').classList.add('hidden');$('#app').classList.add('hidden');$('#login').classList.remove('hidden'); }
+    function showApp(){ $('#boot').classList.add('hidden');$('#login').classList.add('hidden');$('#app').classList.remove('hidden');load(); }
+    $('#loginForm').onsubmit=async e=>{e.preventDefault();$('#loginError').textContent='';try{await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('#username').value,password:$('#password').value})});$('#password').value='';showApp()}catch(x){$('#loginError').textContent=x.message}};
+    async function logout(){try{await api('/api/logout',{method:'POST'})}finally{showLogin()}}
+    $('#logout').onclick=logout;$('#mobileLogout').onclick=logout;
+    async function load(path=state.path){try{const data=await api('/api/list?path='+enc(path));state.path=data.path;state.entries=data.entries;state.selected.clear();render()}catch(e){toast(e.message)}}
+    function sortedEntries(){let a=state.entries.filter(x=>x.name.toLowerCase().includes(state.query));const [key,dir]=$('#sort').value.split('-');a.sort((x,y)=>{if(x.directory!==y.directory)return x.directory?-1:1;const v=key==='name'?x.name.localeCompare(y.name,'zh-CN',{numeric:true}):x.modified-y.modified;return dir==='asc'?v:-v});return a}
+    const size=n=>{if(!n)return '—';const u=['B','KB','MB','GB','TB'];let i=0;while(n>=1024&&i<u.length-1){n/=1024;i++}return n.toFixed(i?1:0)+' '+u[i]};
+    const date=n=>new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(n));
+    function icon(e){return e.directory?'📁':e.image?'🖼️':/zip|compressed/.test(e.mime)?'🗜️':/json|text|xml/.test(e.mime)?'📄':'🎮'}
+    function render(){renderCrumbs();renderSelection();const items=sortedEntries();const c=$('#content');c.textContent='';$('#folderTitle').textContent=state.path?state.path.split('/').pop():'我的存档';$('#listView').classList.toggle('active',state.view==='list');$('#gridView').classList.toggle('active',state.view==='grid');if(!items.length){c.innerHTML='<div class="empty"><div><div class="big">☁</div><b>这里还没有文件</b><p>点击“上传文件”即可添加。</p></div></div>';return}state.view==='list'?renderList(c,items):renderGrid(c,items)}
+    function renderCrumbs(){const c=$('#crumbs');c.textContent='';const root=document.createElement('button');root.textContent='我的存档';root.onclick=()=>load('');c.append(root);let built='';for(const p of state.path.split('/').filter(Boolean)){c.append(document.createTextNode('›'));built=join(built,p);const b=document.createElement('button');b.textContent=p;const target=built;b.onclick=()=>load(target);c.append(b)}}
+    function checkbox(e){const x=document.createElement('input');x.type='checkbox';x.className='check';x.checked=state.selected.has(e.path);x.onclick=ev=>{ev.stopPropagation();toggle(e.path,x.checked)};return x}
+    function nameButton(e){const b=document.createElement('button');b.className='namebtn';b.textContent=e.name;b.onclick=()=>e.directory?load(e.path):downloadOne(e.path);return b}
+    function renderList(c,items){const h=document.createElement('div');h.className='list-head';h.innerHTML='<span></span><span>名称</span><span>修改日期</span><span>大小</span>';c.append(h);for(const e of items){const r=document.createElement('div');r.className='file-row'+(state.selected.has(e.path)?' selected':'');r.append(checkbox(e));const n=document.createElement('div');n.className='namecell';const i=document.createElement('span');i.className='fileicon '+(e.directory?'foldericon':'');i.textContent=icon(e);n.append(i,nameButton(e));r.append(n);const d=document.createElement('span');d.className='muted date';d.textContent=date(e.modified);r.append(d);const s=document.createElement('span');s.className='muted size';s.textContent=e.directory?'—':size(e.size);r.append(s);c.append(r)}}
+    function renderGrid(c,items){const g=document.createElement('div');g.className='grid';for(const e of items){const card=document.createElement('div');card.className='card'+(state.selected.has(e.path)?' selected':'');card.append(checkbox(e));const p=document.createElement('div');p.className='preview';if(e.image){const img=document.createElement('img');img.loading='lazy';img.src='/api/file?path='+enc(e.path);p.append(img)}else{const i=document.createElement('span');i.className='largeicon';i.textContent=icon(e);p.append(i)}const n=document.createElement('div');n.className='cardname';n.append(nameButton(e));card.append(p,n);g.append(card)}c.append(g)}
+    function toggle(path,on){on?state.selected.add(path):state.selected.delete(path);render()}
+    function renderSelection(){const n=state.selected.size;$('#selection').classList.toggle('hidden',!n);$('#selectedCount').textContent='已选择 '+n+' 项'}
+    $('#clearSelection').onclick=()=>{state.selected.clear();render()};$('#sort').onchange=render;$('#search').oninput=e=>{state.query=e.target.value.trim().toLowerCase();render()};
+    $('#listView').onclick=()=>{state.view='list';localStorage.view='list';render()};$('#gridView').onclick=()=>{state.view='grid';localStorage.view='grid';render()};
+    function downloadOne(path){location.href='/api/download?path='+enc(path)}
+    $('#downloadSelected').onclick=async()=>{try{const r=await fetch('/api/archive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paths:[...state.selected]})});if(!r.ok){const d=await r.json();throw Error(d.error)}const blob=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='game-saves.zip';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}catch(e){toast(e.message)}};
+    $$('[data-upload]').forEach(b=>b.onclick=()=>$('#fileInput').click());
+    $('#fileInput').onchange=async e=>{const files=[...e.target.files];for(let i=0;i<files.length;i++){const f=files[i];try{$('#progressBar').style.width=((i/files.length)*100)+'%';await api('/api/upload?path='+enc(state.path)+'&name='+enc(f.name),{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:f});toast('已上传：'+f.name)}catch(x){toast(x.message);break}}$('#progressBar').style.width='100%';setTimeout(()=>$('#progressBar').style.width='0',400);e.target.value='';load()};
+    function openFolderDialog(){$('#folderName').value='';$('#folderDialog').showModal();setTimeout(()=>$('#folderName').focus(),50)}
+    $('#mobileNewFolder').onclick=openFolderDialog;document.querySelector('.sidebar .nav:nth-of-type(2)').onclick=()=>{$('#sort').value='modified-desc';render()};
+    document.querySelector('.new-btn').oncontextmenu=e=>{e.preventDefault();openFolderDialog()};
+    $('#createFolder').onclick=async e=>{e.preventDefault();const name=$('#folderName').value.trim();if(!name)return;try{await api('/api/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:state.path,name})});$('#folderDialog').close();toast('文件夹已创建');load()}catch(x){toast(x.message)}};
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.selected.size){state.selected.clear();render()}});
+    async function bootstrap(){
+      try{
+        const r=await fetch('/api/me',{cache:'no-store'});
+        if(r.status===401){showLogin();return}
+        if(!r.ok)throw Error('服务暂不可用');
+        showApp();
+      }catch(_){setTimeout(bootstrap,1000)}
+    }
+    bootstrap();
+  </script>
+</body>
+</html>

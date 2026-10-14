@@ -71,3 +71,7 @@ The complete v4 copy is kept under [`v4-powershell51-native-command-fix`](v4-pow
 ## V5: one PC with multiple automatically named VPS folders
 
 Use the complete v5 copy under [`v5-multi-vps-f-drive`](v5-multi-vps-f-drive/README-v5-multi-vps-f-drive.md) for a new or existing VPS. It stores each VPS in `F:\新建文件夹\IP-国家名-磁盘容量`, keeps earlier VPS imports, and supports adding many VPS instances to one Windows computer. Earlier versions remain unchanged.
+
+## V6: Windows path encoding fix and D-drive layout
+
+Use the complete v6 copy under [`v6-windows-encoding-d-drive-fix`](v6-windows-encoding-d-drive-fix/README-v6-windows-encoding-d-drive-fix.md). It prevents the PowerShell 5.1 `?????` path corruption, sends Syncthing configuration as UTF-8, and stores each VPS directly at `D:\IP-国家名-磁盘容量`. V1 through V5 remain unchanged.

@@ -1,0 +1,160 @@
+name: V6 Windows PowerShell 5.1 multi-VPS end-to-end
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'v6-windows-encoding-d-drive-fix/**'
+      - '.github/workflows/v6-windows-powershell51-d-drive-e2e.yml'
+
+jobs:
+  windows-multi-vps-e2e:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import two independent VPS peers with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $archive = Join-Path $env:RUNNER_TEMP 'syncthing-windows-amd64-v1.27.2.zip'
+          $extract = Join-Path $env:RUNNER_TEMP 'syncthing-v6-bin'
+          $servers = @()
+          $allChecksPassed = $false
+          try {
+            New-Item -ItemType Directory -Path $extract -Force | Out-Null
+            if (-not (Test-Path -LiteralPath 'D:\')) { throw 'GitHub Windows runner does not expose D: drive' }
+            Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/syncthing/syncthing/releases/download/v1.27.2/syncthing-windows-amd64-v1.27.2.zip' -OutFile $archive
+            if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'b54eb32ea5a9888867195e1f20d649ad9866c0644483434f3f839330c1070d1b') { throw 'archive hash mismatch' }
+            Expand-Archive -LiteralPath $archive -DestinationPath $extract -Force
+            $serverExe = (Get-ChildItem $extract -Filter syncthing.exe -Recurse | Select-Object -First 1).FullName
+            $android = 'XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3'
+            $pythonExe = (Get-Command python.exe).Source
+            $enrollerScript = Join-Path $PWD 'v6-windows-encoding-d-drive-fix/device-enroller-v6.py'
+
+            for ($index = 1; $index -le 2; $index++) {
+              $root = Join-Path $env:RUNNER_TEMP "v6-server-$index"
+              $serverHome = Join-Path $root 'config'
+              $files = Join-Path $root 'files'
+              $tokenFile = Join-Path $root 'token'
+              $log = Join-Path $root 'server.log'
+              $stdout = Join-Path $root 'server.stdout.log'
+              $stderr = Join-Path $root 'server.stderr.log'
+              $enrollerOut = Join-Path $root 'enroller.stdout.log'
+              $enrollerErr = Join-Path $root 'enroller.stderr.log'
+              $guiPort = 38383 + $index
+              $syncPort = 31999 + $index
+              $folderId = "pc-downloads-test-vps-$index"
+              $label = "203.0.113.$($index)-Testland-$($index)0GB"
+              $token = if ($index -eq 1) { '0123456789abcdef0123456789abcdef' } else { 'fedcba9876543210fedcba9876543210' }
+              New-Item -ItemType Directory -Path $serverHome,$files -Force | Out-Null
+              & $serverExe generate "--home=$serverHome" | Out-Null
+              $args = "serve --home=`"$serverHome`" --no-browser --no-restart --no-upgrade --no-default-folder --gui-address=127.0.0.1:$guiPort --logfile=`"$log`" --logflags=0"
+              $process = Start-Process $serverExe -WorkingDirectory $root -ArgumentList $args -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru -WindowStyle Hidden
+              [xml]$xml = Get-Content (Join-Path $serverHome 'config.xml')
+              $headers = @{'X-API-Key'=[string]$xml.configuration.gui.apikey}
+              $api = "http://127.0.0.1:$guiPort"
+              $status = $null
+              for ($wait=0; $wait -lt 60; $wait++) {
+                try { $status = Invoke-RestMethod "$api/rest/system/status" -Headers $headers -TimeoutSec 2; if ($status.myID) { break } } catch {}
+                $process.Refresh(); if ($process.HasExited) { break }; Start-Sleep -Milliseconds 500
+              }
+              if (-not $status.myID) { throw "test VPS $index did not start" }
+              $config = Invoke-RestMethod "$api/rest/config" -Headers $headers
+              $config.devices = @($config.devices) + [pscustomobject]@{deviceID=$android;name='Android';addresses=@('dynamic');autoAcceptFolders=$true}
+              $config.folders = @([pscustomobject]@{id=$folderId;label=$label;path=(Join-Path $files $label);type='sendreceive';fsWatcherEnabled=$true;rescanIntervalS=60;devices=@([pscustomobject]@{deviceID=$status.myID},[pscustomobject]@{deviceID=$android})})
+              $config.defaults.folder.path = $files
+              $config.options.listenAddresses = @("tcp://127.0.0.1:$syncPort")
+              $config.options.globalAnnounceEnabled = $false
+              $config.options.localAnnounceEnabled = $false
+              $config.options.relaysEnabled = $false
+              $config.options.reconnectionIntervalS = 2
+              Invoke-RestMethod "$api/rest/config" -Headers $headers -Method Put -ContentType 'application/json' -Body ($config | ConvertTo-Json -Depth 50 -Compress) | Out-Null
+              $token | Set-Content $tokenFile -Encoding ASCII
+              $configXml = Join-Path $serverHome 'config.xml'
+              $enrollerArgs = "`"$enrollerScript`" --config `"$configXml`" --token `"$tokenFile`" --root `"$files`" --android $android --folder-id $folderId --folder-label $label --api $api"
+              $enroller = Start-Process $pythonExe -ArgumentList $enrollerArgs -RedirectStandardOutput $enrollerOut -RedirectStandardError $enrollerErr -PassThru -WindowStyle Hidden
+              $servers += [pscustomobject]@{Index=$index;Root=$root;Files=$files;Api=$api;Headers=$headers;Status=$status;Process=$process;Enroller=$enroller;FolderId=$folderId;Label=$label;Token=$token;SyncPort=$syncPort}
+            }
+            Write-Host '::warning title=V6 stage::Both test VPS peers started.'
+
+            $installer = Join-Path $PWD 'v6-windows-encoding-d-drive-fix/windows-auto-sync-v6.ps1'
+            foreach ($server in $servers) {
+              $childOut = Join-Path $env:RUNNER_TEMP "v6-installer-$($server.Index).stdout.log"
+              $childErr = Join-Path $env:RUNNER_TEMP "v6-installer-$($server.Index).stderr.log"
+              $childArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$installer`" -VpsDeviceId $($server.Status.myID) -EnrollmentToken $($server.Token) -VpsFolderId $($server.FolderId) -VpsLabel $($server.Label) -VpsAddress tcp://127.0.0.1:$($server.SyncPort)"
+              $child = Start-Process powershell.exe -ArgumentList $childArgs -Wait -PassThru -RedirectStandardOutput $childOut -RedirectStandardError $childErr
+              Get-Content $childOut -ErrorAction SilentlyContinue
+              if ($child.ExitCode -ne 0) {
+                $detail = @($childErr,$childOut) | ForEach-Object { if (Test-Path $_) { (Get-Content $_ -Tail 10) -join ' / ' } }
+                throw "V6 installer exited with code $($child.ExitCode) for VPS $($server.Index): $($detail -join ' | ')"
+              }
+              Write-Host "::warning title=V6 stage::Imported VPS $($server.Index)."
+            }
+
+            $clientRoot = Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v6'
+            $clientPort = (Get-Content (Join-Path $clientRoot 'gui-port.txt') -Raw).Trim()
+            [xml]$clientXml = Get-Content (Join-Path $clientRoot 'config/config.xml')
+            $clientHeaders = @{'X-API-Key'=[string]$clientXml.configuration.gui.apikey}
+            $clientApi = "http://127.0.0.1:$clientPort"
+            $clientStatus = Invoke-RestMethod "$clientApi/rest/system/status" -Headers $clientHeaders
+            $clientConfig = Invoke-RestMethod "$clientApi/rest/config" -Headers $clientHeaders
+            foreach ($server in $servers) {
+              $folder = @($clientConfig.folders) | Where-Object { $_.id -eq $server.FolderId } | Select-Object -First 1
+              $expectedPath = "D:\$($server.Label)"
+              if (-not $folder -or $folder.path -ne $expectedPath) { throw "client folder missing or incorrectly named for VPS $($server.Index)" }
+              $serverConfig = Invoke-RestMethod "$($server.Api)/rest/config" -Headers $server.Headers
+              $serverFolder = @($serverConfig.folders) | Where-Object { $_.id -eq $server.FolderId } | Select-Object -First 1
+              if (@($serverFolder.devices.deviceID) -notcontains $clientStatus.myID) { throw "VPS $($server.Index) did not enroll the Windows device" }
+              $source = Join-Path $expectedPath "vps-$($server.Index)-2MiB.bin"
+              $payload = New-Object byte[] (2 * 1024 * 1024)
+              ([Random]::new(40 + $server.Index)).NextBytes($payload)
+              [IO.File]::WriteAllBytes($source, $payload)
+              Invoke-RestMethod "$clientApi/rest/db/scan?folder=$($server.FolderId)" -Headers $clientHeaders -Method Post | Out-Null
+              $target = Join-Path ([string]$serverFolder.path) (Split-Path $source -Leaf)
+              for ($wait=0; $wait -lt 120; $wait++) { if ((Test-Path $target) -and ((Get-FileHash $source).Hash -eq (Get-FileHash $target).Hash)) { break }; Start-Sleep -Milliseconds 500 }
+              if (-not (Test-Path $target)) { throw "file did not arrive at VPS $($server.Index)" }
+              if ((Get-FileHash $source).Hash -ne (Get-FileHash $target).Hash) { throw "hash mismatch at VPS $($server.Index)" }
+
+              $serverSource = Join-Path ([string]$serverFolder.path) "from-vps-$($server.Index)-2MiB.bin"
+              $serverPayload = New-Object byte[] (2 * 1024 * 1024)
+              ([Random]::new(80 + $server.Index)).NextBytes($serverPayload)
+              [IO.File]::WriteAllBytes($serverSource, $serverPayload)
+              Invoke-RestMethod "$($server.Api)/rest/db/scan?folder=$($server.FolderId)" -Headers $server.Headers -Method Post | Out-Null
+              $clientTarget = Join-Path $expectedPath (Split-Path $serverSource -Leaf)
+              for ($wait=0; $wait -lt 120; $wait++) { if ((Test-Path $clientTarget) -and ((Get-FileHash $serverSource).Hash -eq (Get-FileHash $clientTarget).Hash)) { break }; Start-Sleep -Milliseconds 500 }
+              if (-not (Test-Path $clientTarget)) { throw "file did not download from VPS $($server.Index)" }
+              if ((Get-FileHash $serverSource).Hash -ne (Get-FileHash $clientTarget).Hash) { throw "download hash mismatch from VPS $($server.Index)" }
+            }
+            if (@($clientConfig.folders | Where-Object { $_.id -like 'pc-downloads-test-vps-*' }).Count -ne 2) { throw 'client did not retain both VPS folders' }
+            if (-not (Test-Path (Join-Path ([Environment]::GetFolderPath('Startup')) 'VPS-Auto-Sync-v6.lnk'))) { throw 'startup shortcut missing' }
+            $chrome = Get-ItemProperty 'HKCU:\Software\Policies\Google\Chrome'
+            if ($chrome.DownloadDirectory -ne "D:\$($servers[1].Label)") { throw 'latest imported VPS is not the browser download folder' }
+            Write-Host 'REAL WINDOWS V6 MULTI-VPS E2E PASSED: two peers, two named D-drive folders, startup, policy, enrollment, and byte-exact transfers.'
+            Write-Host '::warning title=V6 stage::All multi-VPS assertions passed.'
+            $allChecksPassed = $true
+            $global:LASTEXITCODE = 0
+          } catch {
+            $failure = ([string]$_.Exception.Message).Replace("`r", ' ').Replace("`n", ' ')
+            Write-Host "::error title=V6 Windows multi-VPS E2E failure::$failure"
+            throw
+          } finally {
+            $savedErrorAction = $ErrorActionPreference
+            $ErrorActionPreference = 'SilentlyContinue'
+            Get-Process syncthing -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            foreach ($server in $servers) { if ($server.Enroller) { Stop-Process -Id $server.Enroller.Id -Force -ErrorAction SilentlyContinue } }
+            $global:LASTEXITCODE = 0
+            $ErrorActionPreference = $savedErrorAction
+            Write-Host "::warning title=V6 cleanup::passed=$allChecksPassed"
+          }
+          if (-not $allChecksPassed) { throw 'The multi-VPS assertions did not reach the success marker.' }
+          exit 0
+
+      - name: Upload V6 logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v6-windows-multi-vps-logs
+          path: C:/Users/runneradmin/AppData/Local/VPS-Auto-Sync-v6/*.log
