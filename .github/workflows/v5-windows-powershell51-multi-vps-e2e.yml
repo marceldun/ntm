@@ -23,6 +23,7 @@ jobs:
           $extract = Join-Path $env:RUNNER_TEMP 'syncthing-v5-bin'
           $fBacking = Join-Path $env:RUNNER_TEMP 'FDrive'
           $servers = @()
+          $allChecksPassed = $false
           try {
             New-Item -ItemType Directory -Path $extract,$fBacking -Force | Out-Null
             & subst.exe F: $fBacking
@@ -114,6 +115,7 @@ jobs:
             $chrome = Get-ItemProperty 'HKCU:\Software\Policies\Google\Chrome'
             if ($chrome.DownloadDirectory -ne "F:\新建文件夹\$($servers[1].Label)") { throw 'latest imported VPS is not the browser download folder' }
             Write-Host 'REAL WINDOWS V5 MULTI-VPS E2E PASSED: two peers, two named F-drive folders, startup, policy, enrollment, and byte-exact transfers.'
+            $allChecksPassed = $true
             $global:LASTEXITCODE = 0
           } catch {
             $failure = ([string]$_.Exception.Message).Replace("`r", ' ').Replace("`n", ' ')
@@ -125,6 +127,7 @@ jobs:
             Start-Process subst.exe -ArgumentList @('F:','/D') -Wait -WindowStyle Hidden -ErrorAction SilentlyContinue
             $global:LASTEXITCODE = 0
           }
+          if ($allChecksPassed) { exit 0 }
 
       - name: Upload V5 logs on failure
         if: failure()
