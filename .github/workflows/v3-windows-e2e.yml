@@ -28,6 +28,8 @@ jobs:
           $serverLog = Join-Path $serverRoot 'server.log'
           $serverStdout = Join-Path $serverRoot 'server.stdout.log'
           $serverStderr = Join-Path $serverRoot 'server.stderr.log'
+          $enrollerStdout = Join-Path $serverRoot 'enroller.stdout.log'
+          $enrollerStderr = Join-Path $serverRoot 'enroller.stderr.log'
           $serverProcess = $null
           $enrollerProcess = $null
           try {
@@ -71,11 +73,10 @@ jobs:
             $serverConfig.options.reconnectionIntervalS = 2
             Invoke-RestMethod 'http://127.0.0.1:38384/rest/config' -Headers $serverHeaders -Method Put -ContentType 'application/json' -Body ($serverConfig | ConvertTo-Json -Depth 50 -Compress) | Out-Null
             '0123456789abcdef0123456789abcdef' | Set-Content $tokenFile -Encoding ASCII
-            $enrollerArgs = @(
-              (Join-Path $PWD 'v3-windows-service-start-fix/device-enroller-v3.py'),
-              '--config',$serverHome,'--token',$tokenFile,'--root',$serverFiles,'--android',$android,'--api','http://127.0.0.1:38384'
-            )
-            $enrollerProcess = Start-Process python -ArgumentList $enrollerArgs -PassThru -WindowStyle Hidden
+            $enrollerScript = Join-Path $PWD 'v3-windows-service-start-fix/device-enroller-v3.py'
+            $pythonExe = (Get-Command python.exe).Source
+            $enrollerArgs = "`"$enrollerScript`" --config `"$serverHome`" --token `"$tokenFile`" --root `"$serverFiles`" --android $android --api http://127.0.0.1:38384"
+            $enrollerProcess = Start-Process $pythonExe -ArgumentList $enrollerArgs -RedirectStandardOutput $enrollerStdout -RedirectStandardError $enrollerStderr -PassThru -WindowStyle Hidden
             & (Join-Path $PWD 'v3-windows-service-start-fix/windows-auto-sync-v3.ps1') -VpsDeviceId $serverStatus.myID -EnrollmentToken '0123456789abcdef0123456789abcdef' -VpsAddress 'tcp://127.0.0.1:32000'
 
             $clientRoot = Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v3'
@@ -87,7 +88,10 @@ jobs:
             $serverConfigAfter = Invoke-RestMethod 'http://127.0.0.1:38384/rest/config' -Headers $serverHeaders
             $serverFolderAfter = @($serverConfigAfter.folders) | Where-Object { $_.id -eq 'pc-downloads' } | Select-Object -First 1
             if (-not $serverFolderAfter) { throw 'VPS pc-downloads folder is missing after enrollment' }
-            if (@($serverFolderAfter.devices.deviceID) -notcontains $clientStatus.myID) { throw 'VPS folder was not shared with the enrolled Windows device' }
+            if (@($serverFolderAfter.devices.deviceID) -notcontains $clientStatus.myID) {
+              $enrollerDetail = @($enrollerStderr,$enrollerStdout) | ForEach-Object { if (Test-Path $_) { (Get-Content $_ -Tail 5) -join ' / ' } }
+              throw ('VPS folder was not shared with the enrolled Windows device: ' + ($enrollerDetail -join ' | '))
+            }
             $source = Join-Path $env:USERPROFILE 'Downloads/VPS-Auto-Sync/windows-runner-2MiB.bin'
             $payload = New-Object byte[] (2 * 1024 * 1024)
             ([Random]::new(42)).NextBytes($payload)
