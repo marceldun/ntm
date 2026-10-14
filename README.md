@@ -63,3 +63,11 @@ The complete v2 copy is kept under [`v2-port-connectivity-fix`](v2-port-connecti
 ## V3: Windows local sync service stalls during startup
 
 The complete v3 copy is kept under [`v3-windows-service-start-fix`](v3-windows-service-start-fix/README-v3-windows-service-start-fix.md). It automatically selects a free local API port, captures startup logs, detects an exited process, retries once on a new port, and has a fixed visible timeout instead of V2's silent wait. V1 and V2 remain unchanged.
+
+## V4: Windows PowerShell 5.1 startup fix
+
+The complete v4 copy is kept under [`v4-powershell51-native-command-fix`](v4-powershell51-native-command-fix/README-v4-powershell51-native-command-fix.md). It removes the harmless missing-drive cleanup failure and was validated on Windows PowerShell 5.1. Earlier versions remain unchanged.
+
+## V5: one PC with multiple automatically named VPS folders
+
+Use the complete v5 copy under [`v5-multi-vps-f-drive`](v5-multi-vps-f-drive/README-v5-multi-vps-f-drive.md) for a new or existing VPS. It stores each VPS in `F:\新建文件夹\IP-国家名-磁盘容量`, keeps earlier VPS imports, and supports adding many VPS instances to one Windows computer. Earlier versions remain unchanged.

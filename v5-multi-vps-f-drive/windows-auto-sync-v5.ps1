@@ -21,7 +21,8 @@ $StdoutPath = Join-Path $InstallRoot 'syncthing-v5.stdout.log'
 $StderrPath = Join-Path $InstallRoot 'syncthing-v5.stderr.log'
 $FolderId = $VpsFolderId
 $FolderLabel = $VpsLabel
-$DownloadRoot = 'F:\新建文件夹'
+$NewFolderName = ([char]0x65B0) + ([char]0x5EFA) + ([char]0x6587) + ([char]0x4EF6) + ([char]0x5939)
+$DownloadRoot = Join-Path 'F:\' $NewFolderName
 $DownloadPath = Join-Path $DownloadRoot $VpsLabel
 
 if ($VpsDeviceId -notmatch '^[A-Z2-7]{7}(-[A-Z2-7]{7}){7}$') {
@@ -240,7 +241,8 @@ if (-not $replicated) { throw 'The PC connected, but the end-to-end VPS file rep
 Remove-Item -LiteralPath $testFile -Force
 Invoke-RestMethod -Uri "$Api/rest/db/scan?folder=$FolderId" -Headers $headers -Method Post | Out-Null
 
-$desktopShortcut = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'VPS多服务器同步.lnk'))
+$desktopName = 'VPS' + ([char]0x591A) + ([char]0x670D) + ([char]0x52A1) + ([char]0x5668) + ([char]0x540C) + ([char]0x6B65) + '.lnk'
+$desktopShortcut = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) $desktopName))
 $desktopShortcut.TargetPath = $DownloadRoot
 $desktopShortcut.Save()
 

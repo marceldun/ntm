@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# V5: fixes the silent Windows local-service startup wait in V2.
-# Complete zero-to-working VPS installer with logged startup, free-port selection and automatic retry.
+# V5: complete zero-to-working multi-VPS installer.
+# Each VPS gets a unique F-drive folder on Windows while earlier imports remain configured.
 set -Eeuo pipefail
 umask 077
 
@@ -17,7 +17,7 @@ readonly ENROLLER_SHA='65fcbb80fd157a16fdb7dae95709072dd56eb98d3b4085825aa21eb5f
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v5-multi-vps-f-drive/cloud-drive/install-cloud-drive-v5.sh'
 readonly CLOUD_INSTALLER_SHA='e298a011621ac9336a3606e779cce26949ed6e9cffc55e24ff9142b15e29cc3d'
 readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v5-multi-vps-f-drive/windows-auto-sync-v5.ps1'
-readonly WINDOWS_SETUP_SHA='18340a681f1317200635d8d329f6d8c07c92d82b21139214b161c4ce9ef75756'
+readonly WINDOWS_SETUP_SHA='393e636c42a4474c12c4a6ed2fa942a50db29cbb1622a9b147166db361db4684'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
 WEB_USER="${2:-marcel}"
@@ -64,7 +64,7 @@ if ! id "$APP_USER" >/dev/null 2>&1; then
   useradd --system --gid "$APP_GROUP" --home-dir "$APP_STATE" --shell /usr/sbin/nologin "$APP_USER"
 fi
 [[ $(id -gn "$APP_USER") == "$APP_GROUP" ]] || usermod --gid "$APP_GROUP" "$APP_USER"
-install -d -o "$APP_USER" -g "$APP_GROUP" -m 0700 "$APP_STATE" "$SYNC_ROOT" "$SYNC_ROOT/电脑下载"
+install -d -o "$APP_USER" -g "$APP_GROUP" -m 0700 "$APP_STATE" "$SYNC_ROOT"
 chown -R "$APP_USER:$APP_GROUP" "$APP_STATE"
 
 printf '[3/9] 安装开机自启服务……\n'
