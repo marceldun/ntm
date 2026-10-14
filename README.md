@@ -59,3 +59,7 @@ The installer stores only a PBKDF2 password hash, creates a self-signed HTTPS ce
 ## V2: Windows cannot reach VPS ports 443/8443
 
 The complete v2 copy is kept under [`v2-port-connectivity-fix`](v2-port-connectivity-fix/README-v2-443-8443-connectivity-fix.md). It replaces Windows WebDAV transport with authenticated Syncthing direct/relay transport, supports files larger than 4 GB, and retains the original v1 files unchanged.
+
+## V3: Windows local sync service stalls during startup
+
+The complete v3 copy is kept under [`v3-windows-service-start-fix`](v3-windows-service-start-fix/README-v3-windows-service-start-fix.md). It automatically selects a free local API port, captures startup logs, detects an exited process, retries once on a new port, and has a fixed visible timeout instead of V2's silent wait. V1 and V2 remain unchanged.

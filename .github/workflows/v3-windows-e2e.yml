@@ -1,0 +1,97 @@
+name: V3 Windows end-to-end
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'v3-windows-service-start-fix/**'
+      - '.github/workflows/v3-windows-e2e.yml'
+
+jobs:
+  windows-e2e:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start a real VPS peer and run the V3 Windows installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $archive = Join-Path $env:RUNNER_TEMP 'syncthing-windows-amd64-v1.27.2.zip'
+          $extract = Join-Path $env:RUNNER_TEMP 'syncthing-v3-e2e-bin'
+          $serverRoot = Join-Path $env:RUNNER_TEMP 'syncthing-v3-e2e-server'
+          $serverHome = Join-Path $serverRoot 'config'
+          $serverFiles = Join-Path $serverRoot 'files'
+          $tokenFile = Join-Path $serverRoot 'token'
+          $serverProcess = $null
+          $enrollerProcess = $null
+          try {
+            Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/syncthing/syncthing/releases/download/v1.27.2/syncthing-windows-amd64-v1.27.2.zip' -OutFile $archive
+            if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'b54eb32ea5a9888867195e1f20d649ad9866c0644483434f3f839330c1070d1b') { throw 'archive hash mismatch' }
+            New-Item -ItemType Directory -Path $extract,$serverHome,$serverFiles -Force | Out-Null
+            Expand-Archive -LiteralPath $archive -DestinationPath $extract -Force
+            $serverExe = (Get-ChildItem $extract -Filter syncthing.exe -Recurse | Select-Object -First 1).FullName
+            & $serverExe generate "--home=$serverHome" | Out-Null
+            $serverProcess = Start-Process $serverExe -WorkingDirectory $serverRoot -ArgumentList @('serve','--home=config','--no-browser','--no-restart','--no-default-folder','--gui-address=127.0.0.1:38384','--logfile=server.log','--logflags=0') -PassThru -WindowStyle Hidden
+            [xml]$serverXml = Get-Content (Join-Path $serverHome 'config.xml')
+            $serverKey = [string]$serverXml.configuration.gui.apikey
+            $serverHeaders = @{'X-API-Key'=$serverKey}
+            for ($i=0; $i -lt 60; $i++) {
+              try { $serverStatus = Invoke-RestMethod 'http://127.0.0.1:38384/rest/system/status' -Headers $serverHeaders -TimeoutSec 2; if ($serverStatus.myID) { break } } catch {}
+              Start-Sleep -Milliseconds 500
+            }
+            if (-not $serverStatus.myID) { throw 'test VPS peer did not start' }
+            $android = 'XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3'
+            $folderLabel = ([char]0x7535)+([char]0x8111)+([char]0x4E0B)+([char]0x8F7D)
+            $serverConfig = Invoke-RestMethod 'http://127.0.0.1:38384/rest/config' -Headers $serverHeaders
+            $serverConfig.devices = @($serverConfig.devices) + [pscustomobject]@{deviceID=$android;name='Android';addresses=@('dynamic');autoAcceptFolders=$true}
+            $serverConfig.folders = @([pscustomobject]@{id='pc-downloads';label=$folderLabel;path=(Join-Path $serverFiles $folderLabel);type='sendreceive';fsWatcherEnabled=$true;rescanIntervalS=60;devices=@([pscustomobject]@{deviceID=$serverStatus.myID},[pscustomobject]@{deviceID=$android})})
+            $serverConfig.defaults.folder.path = $serverFiles
+            $serverConfig.options.listenAddresses = @('tcp://127.0.0.1:32000')
+            $serverConfig.options.globalAnnounceEnabled = $false
+            $serverConfig.options.localAnnounceEnabled = $false
+            $serverConfig.options.relaysEnabled = $false
+            $serverConfig.options.reconnectionIntervalS = 2
+            Invoke-RestMethod 'http://127.0.0.1:38384/rest/config' -Headers $serverHeaders -Method Put -ContentType 'application/json' -Body ($serverConfig | ConvertTo-Json -Depth 50 -Compress) | Out-Null
+            '0123456789abcdef0123456789abcdef' | Set-Content $tokenFile -Encoding ASCII
+            $enrollerArgs = @(
+              (Join-Path $PWD 'v3-windows-service-start-fix/device-enroller-v3.py'),
+              '--config',$serverHome,'--token',$tokenFile,'--root',$serverFiles,'--android',$android,'--api','http://127.0.0.1:38384'
+            )
+            $enrollerProcess = Start-Process python -ArgumentList $enrollerArgs -PassThru -WindowStyle Hidden
+            & (Join-Path $PWD 'v3-windows-service-start-fix/windows-auto-sync-v3.ps1') -VpsDeviceId $serverStatus.myID -EnrollmentToken '0123456789abcdef0123456789abcdef' -VpsAddress 'tcp://127.0.0.1:32000'
+
+            $clientRoot = Join-Path $env:LOCALAPPDATA 'VPS-Auto-Sync-v3'
+            $clientPort = (Get-Content (Join-Path $clientRoot 'gui-port.txt') -Raw).Trim()
+            [xml]$clientXml = Get-Content (Join-Path $clientRoot 'config/config.xml')
+            $clientHeaders = @{'X-API-Key'=[string]$clientXml.configuration.gui.apikey}
+            $clientApi = "http://127.0.0.1:$clientPort"
+            $source = Join-Path $env:USERPROFILE 'Downloads/VPS-Auto-Sync/windows-runner-2MiB.bin'
+            $payload = New-Object byte[] (2 * 1024 * 1024)
+            ([Random]::new(42)).NextBytes($payload)
+            [IO.File]::WriteAllBytes($source, $payload)
+            Invoke-RestMethod "$clientApi/rest/db/scan?folder=pc-downloads" -Headers $clientHeaders -Method Post | Out-Null
+            $target = Join-Path (Join-Path $serverFiles $folderLabel) 'windows-runner-2MiB.bin'
+            for ($i=0; $i -lt 120; $i++) { if (Test-Path $target) { if ((Get-FileHash $source).Hash -eq (Get-FileHash $target).Hash) { break } }; Start-Sleep -Milliseconds 500 }
+            if (-not (Test-Path $target)) { throw 'Windows to VPS file did not arrive' }
+            if ((Get-FileHash $source).Hash -ne (Get-FileHash $target).Hash) { throw 'Windows to VPS file hash mismatch' }
+            if (-not (Test-Path (Join-Path ([Environment]::GetFolderPath('Startup')) 'VPS-Auto-Sync-v3.lnk'))) { throw 'startup shortcut missing' }
+            $chrome = Get-ItemProperty 'HKCU:\Software\Policies\Google\Chrome'
+            if ($chrome.DownloadDirectory -ne (Split-Path $source)) { throw 'browser download policy mismatch' }
+            Write-Host 'REAL WINDOWS V3 E2E PASSED: startup, dynamic GUI port, enrollment, browser policy, and 2 MiB transfer.'
+          } finally {
+            Get-Process syncthing -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            if ($enrollerProcess) { Stop-Process -Id $enrollerProcess.Id -Force -ErrorAction SilentlyContinue }
+            if ($serverProcess) { Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue }
+          }
+
+      - name: Upload V3 logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-windows-logs
+          path: |
+            ~/AppData/Local/VPS-Auto-Sync-v3/*.log
+            ${{ runner.temp }}/syncthing-v3-e2e-server/*.log
