@@ -84,7 +84,8 @@ jobs:
 
             $installer = Join-Path $PWD 'v5-multi-vps-f-drive/windows-auto-sync-v5.ps1'
             foreach ($server in $servers) {
-              & $installer -VpsDeviceId $server.Status.myID -EnrollmentToken $server.Token -VpsFolderId $server.FolderId -VpsLabel $server.Label -VpsAddress "tcp://127.0.0.1:$($server.SyncPort)"
+              & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer -VpsDeviceId $server.Status.myID -EnrollmentToken $server.Token -VpsFolderId $server.FolderId -VpsLabel $server.Label -VpsAddress "tcp://127.0.0.1:$($server.SyncPort)"
+              if ($LASTEXITCODE -ne 0) { throw "V5 installer exited with code $LASTEXITCODE for VPS $($server.Index)" }
               Write-Host "::warning title=V5 stage::Imported VPS $($server.Index)."
             }
 
