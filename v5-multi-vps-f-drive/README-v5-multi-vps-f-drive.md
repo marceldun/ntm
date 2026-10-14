@@ -19,7 +19,7 @@ v5 保留 v4 的 Windows PowerShell 5.1、端口自选、超时、日志、版�
 以 root 登录 VPS，执行：
 
 ```bash
-curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v5-multi-vps-f-drive/install-vps-v5.sh -o /tmp/install-vps-v5.sh && echo 'a85dbd85a56f69db9bdd6e43ef960f88a4e4678d1adc1fca0a3123c33941b342  /tmp/install-vps-v5.sh' | sha256sum -c - && bash /tmp/install-vps-v5.sh
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v5-multi-vps-f-drive/install-vps-v5.sh -o /tmp/install-vps-v5.sh && echo 'c6f654eb38db2c6ea511a6f2f9a8a0c09ee2e0fc461aee8a689e5514032ec1ae  /tmp/install-vps-v5.sh' | sha256sum -c - && bash /tmp/install-vps-v5.sh
 ```
 
 脚本没有输入问题，默认使用：

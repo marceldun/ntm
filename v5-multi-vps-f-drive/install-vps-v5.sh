@@ -12,11 +12,11 @@ readonly SYNC_ROOT="$APP_STATE/saves"
 readonly API_URL='http://127.0.0.1:8384'
 readonly ENROLLER_SERVICE='game-save-pc-enroller-v5.service'
 readonly ENROLLER_PATH='/opt/game-save-sync/device-enroller-v5.py'
-readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v5-multi-vps-f-drive/device-enroller-v5.py'
+readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/5662d6a0ce241c90778a174d877ddb3384200231/v5-multi-vps-f-drive/device-enroller-v5.py'
 readonly ENROLLER_SHA='65fcbb80fd157a16fdb7dae95709072dd56eb98d3b4085825aa21eb5fe598e10'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v5-multi-vps-f-drive/cloud-drive/install-cloud-drive-v5.sh'
-readonly CLOUD_INSTALLER_SHA='e298a011621ac9336a3606e779cce26949ed6e9cffc55e24ff9142b15e29cc3d'
-readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v5-multi-vps-f-drive/windows-auto-sync-v5.ps1'
+readonly CLOUD_INSTALLER_SHA='2d9e286f0568ab16d55c86a86ab62bd15446c62e9c393f39875497644dbad316'
+readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/5662d6a0ce241c90778a174d877ddb3384200231/v5-multi-vps-f-drive/windows-auto-sync-v5.ps1'
 readonly WINDOWS_SETUP_SHA='393e636c42a4474c12c4a6ed2fa942a50db29cbb1622a9b147166db361db4684'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
