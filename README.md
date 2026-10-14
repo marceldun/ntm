@@ -7,7 +7,7 @@ Ubuntu 22.04/24.04 or Debian 12/13 VPS installer for a native, low-memory Syncth
 This installer sets up the low-memory Syncthing service, permanently enables automatic acceptance of folders shared by the preconfigured Android device, and installs the HTTPS web drive. It requires no arguments and no interactive input. The web drive defaults to `marcel` / `456qwe456`:
 
 ```bash
-curl -fL --retry 3 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/install-auto-sync-cloud.sh -o /tmp/install-auto-sync-cloud.sh && echo '0e9e121deb90875dfd8c69b8f51a2e6ce4116486e88be265f1c1f424ba52483b  /tmp/install-auto-sync-cloud.sh' | sha256sum -c - && bash /tmp/install-auto-sync-cloud.sh
+curl -fL --retry 3 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/install-auto-sync-cloud.sh -o /tmp/install-auto-sync-cloud.sh && echo '7024e3c57efeb66d82fd7c14483ad5495425158da432277f009bf7b49ac7d965  /tmp/install-auto-sync-cloud.sh' | sha256sum -c - && bash /tmp/install-auto-sync-cloud.sh
 ```
 
 After adding the printed VPS device ID in Syncthing-Fork, every future folder is configured only on Android: add a folder, select its directory, share it with the VPS, and save. The VPS accepts it below `/var/lib/game-save-sync/saves` and displays it in the web drive without any later VPS command.
@@ -26,6 +26,16 @@ curl -fL --retry 3 https://raw.githubusercontent.com/marceldun/ntm/main/gamesave
 
 See [安卓最少步骤.md](安卓最少步骤.md) for the Android setup and the Android 12 limitation affecting AetherSX2 private storage.
 
+## Windows downloads directly to VPS and Android
+
+For an existing installation, run this once as root on the VPS. It creates the bidirectional `电脑下载` Syncthing folder, shares it with the preconfigured Android device, upgrades the web drive with HTTPS WebDAV, and verifies the endpoint:
+
+```bash
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/enable-pc-direct-download.sh -o /tmp/enable-pc-direct-download.sh && echo 'f8682bc342c7098e1713a781e8e28bd2975b87b7a3b090f121e3fd201d590190  /tmp/enable-pc-direct-download.sh' | sha256sum -c - && bash /tmp/enable-pc-direct-download.sh
+```
+
+Accept the one `电脑下载` folder invitation on Android and select the phone's `Download` directory. Then run the printed command once in Windows PowerShell. It imports the VPS certificate, saves the existing cloud credentials, maps the cloud drive as `V:`, verifies a real write, and sets Chrome and Edge to download into the VPS folder without prompting. From then on, a browser download is written to the VPS and Syncthing transfers it to Android automatically.
+
 ## Automatically accept any Android folder
 
 Run this once on an already paired VPS. It allows the VPS to automatically accept future folders shared by that Android device and place them below `/var/lib/game-save-sync/saves`, so no later SSH command is needed.
@@ -41,7 +51,7 @@ For each new folder, add it in Syncthing-Fork on Android, select the local direc
 The synchronized files live at `/var/lib/game-save-sync/saves`. The optional web interface exposes that same directory without duplicating data. It provides authenticated HTTPS, responsive desktop/mobile layouts, uploads, single and multi-select downloads, folder navigation, image previews, list/grid views, and modified-time sorting.
 
 ```bash
-curl -fL --retry 3 https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/install-cloud-drive.sh -o /tmp/install-cloud-drive.sh && echo '398f1805f823b07c24d19382789441cd9e95b65381fb07fbd42380bc20322b44  /tmp/install-cloud-drive.sh' | sha256sum -c - && bash /tmp/install-cloud-drive.sh
+curl -fL --retry 3 https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/install-cloud-drive.sh -o /tmp/install-cloud-drive.sh && echo 'be33b24a0df32fc223fdc4cad7cc420c1286e3ae09e1edd380b11eabced74dd6  /tmp/install-cloud-drive.sh' | sha256sum -c - && bash /tmp/install-cloud-drive.sh
 ```
 
 The installer stores only a PBKDF2 password hash, creates a self-signed HTTPS certificate, starts a low-privilege systemd service, verifies login and directory listing, and prints the final URL. A successful login uses a signed long-lived secure cookie, survives refreshes and service restarts, and remains valid until the user explicitly logs out.

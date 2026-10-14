@@ -11,7 +11,8 @@ readonly APP_SERVICE='game-save-sync.service'
 readonly SYNC_ROOT="$APP_STATE/saves"
 readonly API_URL='http://127.0.0.1:8384'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/install-cloud-drive.sh'
-readonly CLOUD_INSTALLER_SHA='398f1805f823b07c24d19382789441cd9e95b65381fb07fbd42380bc20322b44'
+readonly CLOUD_INSTALLER_SHA='be33b24a0df32fc223fdc4cad7cc420c1286e3ae09e1edd380b11eabced74dd6'
+readonly WINDOWS_SETUP_SHA='fb4f6902127147699907ec947b499c539741cdf83cbea6fb1510d5e317f8dc46'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
 WEB_USER="${2:-marcel}"
@@ -58,7 +59,7 @@ if ! id "$APP_USER" >/dev/null 2>&1; then
   useradd --system --gid "$APP_GROUP" --home-dir "$APP_STATE" --shell /usr/sbin/nologin "$APP_USER"
 fi
 [[ $(id -gn "$APP_USER") == "$APP_GROUP" ]] || usermod --gid "$APP_GROUP" "$APP_USER"
-install -d -o "$APP_USER" -g "$APP_GROUP" -m 0700 "$APP_STATE" "$SYNC_ROOT"
+install -d -o "$APP_USER" -g "$APP_GROUP" -m 0700 "$APP_STATE" "$SYNC_ROOT" "$SYNC_ROOT/电脑下载"
 chown -R "$APP_USER:$APP_GROUP" "$APP_STATE"
 
 printf '[3/7] 安装开机自启服务……\n'
@@ -172,6 +173,25 @@ defaults.update({
     'versioning': {'type': 'simple', 'params': {'keep': '10'}},
 })
 
+folder = next((item for item in config.get('folders', []) if item.get('id') == 'pc-downloads'), None)
+if folder is None:
+    folder = {'id': 'pc-downloads', 'devices': []}
+    config.setdefault('folders', []).append(folder)
+folder.update({
+    'label': '电脑下载',
+    'path': str(pathlib.Path(sync_root) / '电脑下载'),
+    'type': 'sendreceive',
+    'rescanIntervalS': 3600,
+    'fsWatcherEnabled': True,
+    'fsWatcherDelayS': 5,
+    'ignorePerms': True,
+    'versioning': {'type': 'simple', 'params': {'keep': '10'}},
+})
+shared = {item.get('deviceID') for item in folder.get('devices', [])}
+for wanted in (server_id, android_id):
+    if wanted not in shared:
+        folder.setdefault('devices', []).append({'deviceID': wanted})
+
 options = config.setdefault('options', {})
 options.update({
     'listenAddresses': [
@@ -258,3 +278,6 @@ fi
 printf '\n以后添加任何目录都只在手机操作：文件夹 → “+” → 选择目录 → 共享设备勾选 VPS → 保存。\n'
 printf 'VPS 会永久自动接收，文件进入网页云盘；不再登录 VPS，不再运行代码。\n'
 printf 'VPS 实际总目录：%s\n' "$SYNC_ROOT"
+printf '\n电脑直接下载到 VPS：在 Windows PowerShell 复制下面一整行，只运行一次：\n'
+printf "powershell -NoProfile -ExecutionPolicy Bypass -Command \"\$p=Join-Path \$env:TEMP 'windows-direct-download.ps1'; Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/marceldun/ntm/main/windows-direct-download.ps1' -OutFile \$p; if((Get-FileHash \$p -Algorithm SHA256).Hash -ne '%s'.ToUpper()){throw 'SHA256 check failed'}; & \$p\"\n" "$WINDOWS_SETUP_SHA"
+printf '手机收到“电脑下载”邀请后，选择手机 Download 目录并保存，只做一次。\n'

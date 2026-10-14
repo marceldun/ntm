@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import email.utils
 import hashlib
 import hmac
 import http.cookies
@@ -18,6 +19,8 @@ import tempfile
 import threading
 import time
 import urllib.parse
+import uuid
+import xml.etree.ElementTree as ET
 import zipfile
 from collections import defaultdict, deque
 from http import HTTPStatus
@@ -51,15 +54,19 @@ class DriveServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address, handler, root: pathlib.Path, static: pathlib.Path, temp: pathlib.Path):
+    def __init__(self, address, handler, root: pathlib.Path, static: pathlib.Path,
+                 temp: pathlib.Path, cert: pathlib.Path | None = None):
         super().__init__(address, handler)
         self.root = root.resolve()
         self.static = static.resolve()
         self.temp = temp.resolve()
+        self.cert = cert.resolve() if cert else None
         self.username = env_required("DRIVE_USERNAME")
         self.password_salt = b64decode(env_required("DRIVE_PASSWORD_SALT"))
         self.password_hash = b64decode(env_required("DRIVE_PASSWORD_HASH"))
         self.session_secret = b64decode(env_required("DRIVE_SESSION_SECRET"))
+        self.dav_auth_cache = {}
+        self.dav_auth_lock = threading.Lock()
 
 
 class DriveHandler(BaseHTTPRequestHandler):
@@ -92,6 +99,14 @@ class DriveHandler(BaseHTTPRequestHandler):
         body = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode()
         self.send_headers(status, length=len(body), extra=extra)
         self.wfile.write(body)
+
+    def bytes_response(self, body: bytes, status=200, content_type="application/octet-stream", extra=None):
+        self.send_headers(status, content_type, len(body), extra=extra)
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
+    def empty_response(self, status=204, extra=None):
+        self.send_headers(status, "text/plain; charset=utf-8", 0, extra=extra)
 
     def error_json(self, status, message):
         self.json_response({"error": message}, status)
@@ -143,6 +158,52 @@ class DriveHandler(BaseHTTPRequestHandler):
         except Exception:
             return False
 
+    def password_valid(self, username, password):
+        supplied = hashlib.pbkdf2_hmac("sha256", str(password).encode(),
+                                       self.server.password_salt, PBKDF2_ITERATIONS)
+        valid = hmac.compare_digest(str(username), self.server.username)
+        return valid and hmac.compare_digest(supplied, self.server.password_hash)
+
+    def dav_auth_valid(self):
+        authorization = self.headers.get("Authorization", "")
+        cache_key = hashlib.sha256(authorization.encode()).digest()
+        now = time.monotonic()
+        with self.server.dav_auth_lock:
+            if self.server.dav_auth_cache.get(cache_key, 0) > now:
+                return True
+        if authorization.startswith("Basic "):
+            try:
+                decoded = base64.b64decode(authorization[6:], validate=True).decode("utf-8")
+                username, password = decoded.split(":", 1)
+                if self.password_valid(username, password):
+                    with self.server.dav_auth_lock:
+                        if len(self.server.dav_auth_cache) >= 256:
+                            self.server.dav_auth_cache.clear()
+                        self.server.dav_auth_cache[cache_key] = now + 600
+                    return True
+            except (ValueError, UnicodeDecodeError):
+                pass
+        self.empty_response(HTTPStatus.UNAUTHORIZED, {
+            "WWW-Authenticate": 'Basic realm="VPS Cloud Drive", charset="UTF-8"'
+        })
+        return False
+
+    @staticmethod
+    def is_dav_path(path):
+        return path == "/dav" or path.startswith("/dav/")
+
+    def dav_path(self, url_path, must_exist=True):
+        if not self.is_dav_path(url_path):
+            raise ValueError("WebDAV 路径无效")
+        return self.relative_path(url_path[4:], must_exist=must_exist)
+
+    def dav_href(self, path):
+        relative = self.relative_name(path) if path != self.server.root else ""
+        href = "/dav/" + urllib.parse.quote(relative, safe="/")
+        if path.is_dir() and not href.endswith("/"):
+            href += "/"
+        return href
+
     def new_session(self):
         payload = json.dumps({"u": self.server.username, "e": int(time.time()) + SESSION_SECONDS},
                              separators=(",", ":")).encode()
@@ -170,6 +231,13 @@ class DriveHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlsplit(self.path)
         try:
+            if self.is_dav_path(parsed.path):
+                if not self.dav_auth_valid(): return
+                return self.send_path(self.dav_path(parsed.path), True)
+            if parsed.path == "/certificate.pem":
+                if not self.server.cert or not self.server.cert.is_file():
+                    return self.error_json(HTTPStatus.NOT_FOUND, "证书不存在")
+                return self.bytes_response(self.server.cert.read_bytes(), content_type="application/x-pem-file")
             if parsed.path in ("/", "/index.html"):
                 return self.serve_index()
             if parsed.path == "/api/me":
@@ -190,6 +258,25 @@ class DriveHandler(BaseHTTPRequestHandler):
             return self.error_json(HTTPStatus.BAD_REQUEST, str(exc))
         except BrokenPipeError:
             return
+
+    def do_HEAD(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        try:
+            if not self.is_dav_path(parsed.path):
+                return self.empty_response(HTTPStatus.NOT_FOUND)
+            if not self.dav_auth_valid(): return
+            path = self.dav_path(parsed.path)
+            if path.is_dir():
+                return self.empty_response(HTTPStatus.OK, {"DAV": "1, 2"})
+            stat = path.stat()
+            mime = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+            self.send_headers(HTTPStatus.OK, mime, stat.st_size, extra={
+                "Accept-Ranges": "bytes", "ETag": f'"{stat.st_mtime_ns:x}-{stat.st_size:x}"'
+            })
+        except FileNotFoundError:
+            self.empty_response(HTTPStatus.NOT_FOUND)
+        except (ValueError, PermissionError):
+            self.empty_response(HTTPStatus.BAD_REQUEST)
 
     def do_POST(self):
         parsed = urllib.parse.urlsplit(self.path)
@@ -227,17 +314,229 @@ class DriveHandler(BaseHTTPRequestHandler):
         if not self.login_allowed():
             return self.error_json(HTTPStatus.TOO_MANY_REQUESTS, "登录失败次数过多，请五分钟后再试")
         data = self.read_json()
-        supplied = hashlib.pbkdf2_hmac("sha256", str(data.get("password", "")).encode(),
-                                       self.server.password_salt, PBKDF2_ITERATIONS)
-        valid = hmac.compare_digest(str(data.get("username", "")), self.server.username)
-        valid &= hmac.compare_digest(supplied, self.server.password_hash)
-        if not valid:
+        if not self.password_valid(data.get("username", ""), data.get("password", "")):
             time.sleep(0.35)
             return self.error_json(HTTPStatus.UNAUTHORIZED, "用户名或密码错误")
         token = self.new_session()
         return self.json_response({"ok": True}, extra={
             "Set-Cookie": f"gs_session={token}; Path=/; Max-Age={SESSION_SECONDS}; HttpOnly; Secure; SameSite=Strict"
         })
+
+    def do_OPTIONS(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        if self.is_dav_path(parsed.path):
+            if not self.dav_auth_valid(): return
+            return self.empty_response(HTTPStatus.OK, {
+                "Allow": "OPTIONS, GET, HEAD, PUT, DELETE, MKCOL, COPY, MOVE, PROPFIND, PROPPATCH, LOCK, UNLOCK",
+                "DAV": "1, 2", "MS-Author-Via": "DAV"
+            })
+        self.empty_response(HTTPStatus.NO_CONTENT, {"Allow": "OPTIONS, GET, HEAD, POST"})
+
+    def do_PROPFIND(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        try:
+            if not self.is_dav_path(parsed.path): return self.empty_response(HTTPStatus.NOT_FOUND)
+            if not self.dav_auth_valid(): return
+            self.read_dav_body()
+            path = self.dav_path(parsed.path)
+            depth = self.headers.get("Depth", "1")
+            if depth not in ("0", "1"): return self.empty_response(HTTPStatus.FORBIDDEN)
+            paths = [path]
+            if depth == "1" and path.is_dir():
+                paths.extend(sorted((item for item in path.iterdir()
+                                     if not item.name.startswith(".") and not item.is_symlink()),
+                                    key=lambda item: item.name.casefold()))
+            ET.register_namespace("D", "DAV:")
+            multistatus = ET.Element("{DAV:}multistatus")
+            for item in paths:
+                stat = item.stat()
+                response = ET.SubElement(multistatus, "{DAV:}response")
+                ET.SubElement(response, "{DAV:}href").text = self.dav_href(item)
+                propstat = ET.SubElement(response, "{DAV:}propstat")
+                prop = ET.SubElement(propstat, "{DAV:}prop")
+                ET.SubElement(prop, "{DAV:}displayname").text = item.name if item != self.server.root else "VPS云盘"
+                resource = ET.SubElement(prop, "{DAV:}resourcetype")
+                if item.is_dir(): ET.SubElement(resource, "{DAV:}collection")
+                if item.is_file():
+                    ET.SubElement(prop, "{DAV:}getcontentlength").text = str(stat.st_size)
+                    ET.SubElement(prop, "{DAV:}getcontenttype").text = mimetypes.guess_type(item.name)[0] or "application/octet-stream"
+                ET.SubElement(prop, "{DAV:}getlastmodified").text = email.utils.formatdate(stat.st_mtime, usegmt=True)
+                ET.SubElement(prop, "{DAV:}creationdate").text = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(stat.st_ctime))
+                ET.SubElement(prop, "{DAV:}getetag").text = f'"{stat.st_mtime_ns:x}-{stat.st_size:x}"'
+                supported = ET.SubElement(prop, "{DAV:}supportedlock")
+                lockentry = ET.SubElement(supported, "{DAV:}lockentry")
+                lockscope = ET.SubElement(lockentry, "{DAV:}lockscope")
+                ET.SubElement(lockscope, "{DAV:}exclusive")
+                locktype = ET.SubElement(lockentry, "{DAV:}locktype")
+                ET.SubElement(locktype, "{DAV:}write")
+                ET.SubElement(propstat, "{DAV:}status").text = "HTTP/1.1 200 OK"
+            body = ET.tostring(multistatus, encoding="utf-8", xml_declaration=True)
+            self.bytes_response(body, HTTPStatus.MULTI_STATUS, "application/xml; charset=utf-8", {"DAV": "1, 2"})
+        except FileNotFoundError:
+            self.empty_response(HTTPStatus.NOT_FOUND)
+        except (ValueError, PermissionError, OSError):
+            self.empty_response(HTTPStatus.BAD_REQUEST)
+
+    def read_dav_body(self, output=None):
+        transfer = self.headers.get("Transfer-Encoding", "").lower()
+        if transfer == "chunked":
+            while True:
+                line = self.rfile.readline(128)
+                if not line: raise ValueError("上传中断")
+                size = int(line.split(b";", 1)[0].strip(), 16)
+                if size == 0:
+                    while self.rfile.readline(8192) not in (b"\r\n", b"\n", b""): pass
+                    break
+                data = self.rfile.read(size)
+                if len(data) != size: raise ValueError("上传中断")
+                if output: output.write(data)
+                if self.rfile.read(2) != b"\r\n": raise ValueError("分块格式无效")
+            return
+        length = int(self.headers.get("Content-Length", "0"))
+        if length < 0: raise ValueError("文件长度无效")
+        while length:
+            data = self.rfile.read(min(1024 * 1024, length))
+            if not data: raise ValueError("上传中断")
+            if output: output.write(data)
+            length -= len(data)
+
+    def do_PUT(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        temporary = None
+        try:
+            if not self.is_dav_path(parsed.path): return self.empty_response(HTTPStatus.NOT_FOUND)
+            if not self.dav_auth_valid(): return
+            target = self.dav_path(parsed.path, must_exist=False)
+            if target == self.server.root or target.name.startswith("."): raise ValueError("文件名无效")
+            if not target.parent.is_dir(): return self.empty_response(HTTPStatus.CONFLICT)
+            existed = target.exists()
+            fd, temporary = tempfile.mkstemp(prefix=".webdav-", dir=target.parent)
+            with os.fdopen(fd, "wb") as output:
+                self.read_dav_body(output)
+                output.flush(); os.fsync(output.fileno())
+            os.replace(temporary, target); temporary = None
+            self.empty_response(HTTPStatus.NO_CONTENT if existed else HTTPStatus.CREATED)
+        except FileNotFoundError:
+            self.empty_response(HTTPStatus.CONFLICT)
+        except (ValueError, PermissionError, OSError):
+            self.empty_response(HTTPStatus.BAD_REQUEST)
+        finally:
+            if temporary:
+                try: os.unlink(temporary)
+                except OSError: pass
+
+    def do_MKCOL(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        try:
+            if not self.is_dav_path(parsed.path): return self.empty_response(HTTPStatus.NOT_FOUND)
+            if not self.dav_auth_valid(): return
+            self.read_dav_body()
+            target = self.dav_path(parsed.path, must_exist=False)
+            if target.exists(): return self.empty_response(HTTPStatus.METHOD_NOT_ALLOWED)
+            if not target.parent.is_dir(): return self.empty_response(HTTPStatus.CONFLICT)
+            target.mkdir(mode=0o700)
+            self.empty_response(HTTPStatus.CREATED)
+        except (ValueError, PermissionError, OSError):
+            self.empty_response(HTTPStatus.BAD_REQUEST)
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        try:
+            if not self.is_dav_path(parsed.path): return self.empty_response(HTTPStatus.NOT_FOUND)
+            if not self.dav_auth_valid(): return
+            target = self.dav_path(parsed.path)
+            if target == self.server.root: return self.empty_response(HTTPStatus.FORBIDDEN)
+            shutil.rmtree(target) if target.is_dir() else target.unlink()
+            self.empty_response(HTTPStatus.NO_CONTENT)
+        except FileNotFoundError:
+            self.empty_response(HTTPStatus.NOT_FOUND)
+        except (ValueError, PermissionError, OSError):
+            self.empty_response(HTTPStatus.BAD_REQUEST)
+
+    def dav_destination(self):
+        destination = urllib.parse.urlsplit(self.headers.get("Destination", "")).path
+        return self.dav_path(destination, must_exist=False)
+
+    def do_MOVE(self):
+        self.dav_copy_or_move(move=True)
+
+    def do_COPY(self):
+        self.dav_copy_or_move(move=False)
+
+    def dav_copy_or_move(self, move):
+        parsed = urllib.parse.urlsplit(self.path)
+        try:
+            if not self.is_dav_path(parsed.path): return self.empty_response(HTTPStatus.NOT_FOUND)
+            if not self.dav_auth_valid(): return
+            source = self.dav_path(parsed.path)
+            target = self.dav_destination()
+            if source == self.server.root or target == self.server.root: return self.empty_response(HTTPStatus.FORBIDDEN)
+            if not target.parent.is_dir(): return self.empty_response(HTTPStatus.CONFLICT)
+            existed = target.exists()
+            if existed and self.headers.get("Overwrite", "T").upper() != "T":
+                return self.empty_response(HTTPStatus.PRECONDITION_FAILED)
+            if existed:
+                shutil.rmtree(target) if target.is_dir() else target.unlink()
+            if move:
+                shutil.move(str(source), str(target))
+            elif source.is_dir():
+                shutil.copytree(source, target)
+            else:
+                shutil.copy2(source, target)
+            self.empty_response(HTTPStatus.NO_CONTENT if existed else HTTPStatus.CREATED)
+        except FileNotFoundError:
+            self.empty_response(HTTPStatus.NOT_FOUND)
+        except (ValueError, PermissionError, OSError):
+            self.empty_response(HTTPStatus.BAD_REQUEST)
+
+    def do_LOCK(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        try:
+            if not self.is_dav_path(parsed.path): return self.empty_response(HTTPStatus.NOT_FOUND)
+            if not self.dav_auth_valid(): return
+            self.read_dav_body()
+            target = self.dav_path(parsed.path, must_exist=False)
+            if not target.exists():
+                if not target.parent.is_dir(): return self.empty_response(HTTPStatus.CONFLICT)
+                target.touch(mode=0o600)
+            token = "opaquelocktoken:" + str(uuid.uuid4())
+            ET.register_namespace("D", "DAV:")
+            prop = ET.Element("{DAV:}prop")
+            discovery = ET.SubElement(prop, "{DAV:}lockdiscovery")
+            active = ET.SubElement(discovery, "{DAV:}activelock")
+            scope = ET.SubElement(active, "{DAV:}lockscope"); ET.SubElement(scope, "{DAV:}exclusive")
+            locktype = ET.SubElement(active, "{DAV:}locktype"); ET.SubElement(locktype, "{DAV:}write")
+            ET.SubElement(active, "{DAV:}depth").text = "infinity"
+            ET.SubElement(active, "{DAV:}timeout").text = "Second-3600"
+            locktoken = ET.SubElement(active, "{DAV:}locktoken"); ET.SubElement(locktoken, "{DAV:}href").text = token
+            body = ET.tostring(prop, encoding="utf-8", xml_declaration=True)
+            self.bytes_response(body, HTTPStatus.OK, "application/xml; charset=utf-8", {
+                "Lock-Token": f"<{token}>", "Timeout": "Second-3600", "DAV": "1, 2"
+            })
+        except (ValueError, PermissionError, OSError):
+            self.empty_response(HTTPStatus.BAD_REQUEST)
+
+    def do_UNLOCK(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        if not self.is_dav_path(parsed.path): return self.empty_response(HTTPStatus.NOT_FOUND)
+        if not self.dav_auth_valid(): return
+        self.empty_response(HTTPStatus.NO_CONTENT)
+
+    def do_PROPPATCH(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        if not self.is_dav_path(parsed.path): return self.empty_response(HTTPStatus.NOT_FOUND)
+        if not self.dav_auth_valid(): return
+        try: self.read_dav_body()
+        except (ValueError, OSError): return self.empty_response(HTTPStatus.BAD_REQUEST)
+        ET.register_namespace("D", "DAV:")
+        multistatus = ET.Element("{DAV:}multistatus")
+        response = ET.SubElement(multistatus, "{DAV:}response")
+        ET.SubElement(response, "{DAV:}href").text = parsed.path
+        propstat = ET.SubElement(response, "{DAV:}propstat")
+        ET.SubElement(propstat, "{DAV:}prop")
+        ET.SubElement(propstat, "{DAV:}status").text = "HTTP/1.1 200 OK"
+        self.bytes_response(ET.tostring(multistatus, encoding="utf-8", xml_declaration=True),
+                            HTTPStatus.MULTI_STATUS, "application/xml; charset=utf-8")
 
     def list_directory(self, raw):
         directory = self.relative_path(raw)
@@ -388,7 +687,8 @@ def main():
     args = parser.parse_args()
     args.root.mkdir(parents=True, exist_ok=True)
     args.temp.mkdir(parents=True, exist_ok=True)
-    server = DriveServer((args.host, args.port), DriveHandler, args.root, args.static, args.temp)
+    cert_path = pathlib.Path(args.cert) if args.cert else None
+    server = DriveServer((args.host, args.port), DriveHandler, args.root, args.static, args.temp, cert_path)
     if args.cert and args.key:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.minimum_version = ssl.TLSVersion.TLSv1_2

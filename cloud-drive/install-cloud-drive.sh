@@ -11,7 +11,7 @@ readonly DRIVE_ENV='/etc/game-save-drive.env'
 readonly DRIVE_SERVICE='game-save-drive.service'
 readonly APP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/app.py'
 readonly UI_URL='https://raw.githubusercontent.com/marceldun/ntm/main/cloud-drive/index.html'
-readonly APP_SHA='7c016a0a4332187ca798902a201efd4f86756ad901442a40911d9ef191c6b7f5'
+readonly APP_SHA='8253d859981ff4cb3093fd645208f585440d6c8eeda29376a7395f1b9ce6084b'
 readonly UI_SHA='306ea774f564d80f11b63c7a5478adad46623d7b0bbbe9f788a850207cdea8ae'
 
 USERNAME="${1:-marcel}"
@@ -153,13 +153,17 @@ curl -kfsS --max-time 2 "https://127.0.0.1:$PORT/" >/dev/null || fail '网页服
 printf '[5/5] 验证登录和存档目录……\n'
 export DRIVE_VERIFY_PASSWORD="$PASSWORD"
 python3 - "$USERNAME" "$PORT" <<'PY'
-import http.cookiejar, json, os, ssl, sys, urllib.request
+import base64, http.cookiejar, json, os, ssl, sys, urllib.request
 user, port = sys.argv[1], int(sys.argv[2])
 context = ssl._create_unverified_context()
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()), urllib.request.HTTPSHandler(context=context))
 req = urllib.request.Request(f'https://127.0.0.1:{port}/api/login', data=json.dumps({'username':user,'password':os.environ['DRIVE_VERIFY_PASSWORD']}).encode(), headers={'Content-Type':'application/json'})
 with opener.open(req, timeout=5) as response: assert json.load(response)['ok']
 with opener.open(f'https://127.0.0.1:{port}/api/list?path=', timeout=5) as response: assert 'entries' in json.load(response)
+authorization = base64.b64encode((user + ':' + os.environ['DRIVE_VERIFY_PASSWORD']).encode()).decode()
+req = urllib.request.Request(f'https://127.0.0.1:{port}/dav/', method='PROPFIND', headers={'Authorization':'Basic '+authorization,'Depth':'0'})
+with opener.open(req, timeout=5) as response: assert response.status == 207 and b'multistatus' in response.read()
+with opener.open(f'https://127.0.0.1:{port}/certificate.pem', timeout=5) as response: assert b'BEGIN CERTIFICATE' in response.read()
 PY
 unset DRIVE_VERIFY_PASSWORD PASSWORD AUTH_DATA
 
