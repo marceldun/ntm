@@ -49,7 +49,9 @@ jobs:
               Start-Sleep -Milliseconds 500
             }
             if (-not $serverStatus.myID) {
-              $detail = @($serverStdout,$serverStderr,$serverLog) | ForEach-Object { if (Test-Path $_) { Get-Content $_ -Tail 20 } }
+              $detail = @($serverLog,$serverStderr,$serverStdout) | ForEach-Object {
+                if (Test-Path $_) { "$(Split-Path $_ -Leaf): " + ((Get-Content $_ -Tail 4) -join ' / ') }
+              }
               throw ('test VPS peer did not start: ' + ($detail -join ' | '))
             }
             $android = 'XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3'
