@@ -17,7 +17,7 @@ v5 在 Windows PowerShell 5.1 中提交 Syncthing 配置时，中文目录可能
 ## 全新或已有 VPS：只运行这一行
 
 ```bash
-curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v6-windows-encoding-d-drive-fix/install-vps-v6.sh -o /tmp/install-vps-v6.sh && echo '5d41ac37c04307fa37e828c1c715ab040113b15908295e560d422d93e17205bd  /tmp/install-vps-v6.sh' | sha256sum -c - && bash /tmp/install-vps-v6.sh
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v6-windows-encoding-d-drive-fix/install-vps-v6.sh -o /tmp/install-vps-v6.sh && echo '318de41fd3f9d3bb942dca3de2f660e3abe3c2f66fa9e272f743cfe9f957e318  /tmp/install-vps-v6.sh' | sha256sum -c - && bash /tmp/install-vps-v6.sh
 ```
 
 脚本不询问用户名或密码，默认使用：
