@@ -86,6 +86,7 @@ jobs:
               $childErr = Join-Path $env:RUNNER_TEMP "v6-installer-$($server.Index).stderr.log"
               $childArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$installer`" -VpsDeviceId $($server.Status.myID) -EnrollmentToken $($server.Token) -VpsFolderId $($server.FolderId) -VpsLabel $($server.Label) -VpsAddress tcp://127.0.0.1:$($server.SyncPort)"
               $child = Start-Process powershell.exe -ArgumentList $childArgs -PassThru -RedirectStandardOutput $childOut -RedirectStandardError $childErr
+              $childHandle = $child.Handle
               if (-not $child.WaitForExit(420000)) { Stop-Process -Id $child.Id -Force; throw 'installer exceeded seven-minute deadline' }
               $child.Refresh()
               Get-Content $childOut -ErrorAction SilentlyContinue
