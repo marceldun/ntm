@@ -208,7 +208,7 @@ foreach ($policy in @('HKCU:\Software\Policies\Google\Chrome','HKCU:\Software\Po
     New-ItemProperty -Path $policy -Name DownloadDirectory -PropertyType String -Value $DownloadPath -Force | Out-Null
     New-ItemProperty -Path $policy -Name PromptForDownloadLocation -PropertyType DWord -Value 0 -Force | Out-Null
 }
-& gpupdate.exe '/Target:User' '/Force' | Out-Null
+# Browser reads these user policies at startup; avoid a blocking domain-policy refresh.
 $global:LASTEXITCODE = 0
 
 Write-Host -NoNewline '[5/7] Waiting for the secure VPS connection'
