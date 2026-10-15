@@ -12,12 +12,12 @@ readonly SYNC_ROOT="$APP_STATE/saves"
 readonly API_URL='http://127.0.0.1:8384'
 readonly ENROLLER_SERVICE='game-save-pc-enroller-v6.service'
 readonly ENROLLER_PATH='/opt/game-save-sync/device-enroller-v6.py'
-readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v6-windows-encoding-d-drive-fix/device-enroller-v6.py'
+readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/7b75cf534a6c09ce322a5846fea7f36513c6e9a2/v6-windows-encoding-d-drive-fix/device-enroller-v6.py'
 readonly ENROLLER_SHA='65fcbb80fd157a16fdb7dae95709072dd56eb98d3b4085825aa21eb5fe598e10'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v6-windows-encoding-d-drive-fix/cloud-drive/install-cloud-drive-v6.sh'
-readonly CLOUD_INSTALLER_SHA='138f69616d01659f881f804f3ca39ad945564d0b349cceb6f98b03b6e8b5202b'
-readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v6-windows-encoding-d-drive-fix/windows-auto-sync-v6.ps1'
-readonly WINDOWS_SETUP_SHA='f4493a1b6c8a3fb33896a91facf8bc6ca2dbfbe02a2233815716d1b5b73e807a'
+readonly CLOUD_INSTALLER_SHA='40315c48ace4f5f3030a13e3bd0cf7c0b594f94a6fcdd275187a5b16e37c60c5'
+readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/7b75cf534a6c09ce322a5846fea7f36513c6e9a2/v6-windows-encoding-d-drive-fix/windows-auto-sync-v6.ps1'
+readonly WINDOWS_SETUP_SHA='91e9f22d7f415a0604175f9b170fdedc561750b47993e6cd07edda1524695236'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
 WEB_USER="${2:-marcel}"
