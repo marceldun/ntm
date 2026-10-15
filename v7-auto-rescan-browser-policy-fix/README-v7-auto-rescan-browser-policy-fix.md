@@ -18,7 +18,7 @@ v6 的安装测试调用了手动扫描接口，因此没有真正验证文件�
 ## 全新或已有 VPS：只运行这一行
 
 ```bash
-curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v7-auto-rescan-browser-policy-fix/install-vps-v7.sh -o /tmp/install-vps-v7.sh && echo '0e9166679a239bc49e7c3bd7713bddb86d1bf9ed0137194745e7b0e3d0ab5d71  /tmp/install-vps-v7.sh' | sha256sum -c - && bash /tmp/install-vps-v7.sh
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v7-auto-rescan-browser-policy-fix/install-vps-v7.sh -o /tmp/install-vps-v7.sh && echo 'dc5139e180134ecb02c7793c187df4610b66ed9daad22e3ac66b35dfbeb8bc2a  /tmp/install-vps-v7.sh' | sha256sum -c - && bash /tmp/install-vps-v7.sh
 ```
 
 脚本没有输入问题，默认使用：
