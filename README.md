@@ -75,3 +75,7 @@ Use the complete v5 copy under [`v5-multi-vps-f-drive`](v5-multi-vps-f-drive/REA
 ## V6: Windows path encoding fix and D-drive layout
 
 Use the complete v6 copy under [`v6-windows-encoding-d-drive-fix`](v6-windows-encoding-d-drive-fix/README-v6-windows-encoding-d-drive-fix.md). It prevents the PowerShell 5.1 `?????` path corruption, sends Syncthing configuration as UTF-8, and stores each VPS directly at `D:\IP-国家名-磁盘容量`. V1 through V5 remain unchanged.
+
+## V7: guaranteed background rescans without browser download policies
+
+Use the complete v7 copy under [`v7-auto-rescan-browser-policy-fix`](v7-auto-rescan-browser-policy-fix/README-v7-auto-rescan-browser-policy-fix.md). It detects files placed in each `D:\IP-国家名-磁盘容量` folder through the file watcher plus a ten-second fallback rescan, and removes the Chrome/Edge download policies written by earlier versions. V1 through V6 remain unchanged.
