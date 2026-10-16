@@ -79,3 +79,7 @@ Use the complete v6 copy under [`v6-windows-encoding-d-drive-fix`](v6-windows-en
 ## V7: guaranteed background rescans without browser download policies
 
 Use the complete v7 copy under [`v7-auto-rescan-browser-policy-fix`](v7-auto-rescan-browser-policy-fix/README-v7-auto-rescan-browser-policy-fix.md). It detects files placed in each `D:\IP-国家名-磁盘容量` folder through the file watcher plus a ten-second fallback rescan, and removes the Chrome/Edge download policies written by earlier versions. V1 through V6 remain unchanged.
+
+## V8: Windows reboot recovery
+
+Use the complete v8 copy under [`v8-windows-reboot-autostart-fix`](v8-windows-reboot-autostart-fix/README-v8-windows-reboot-autostart-fix.md). A hidden low-memory watchdog waits for `D:` after login, starts Syncthing, and restarts it after an unexpected exit. Its end-to-end test kills the Windows client, invokes the real startup shortcut, waits for recovery, and then verifies automatic transfers. V1 through V7 remain unchanged.
