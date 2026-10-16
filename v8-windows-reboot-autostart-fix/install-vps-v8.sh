@@ -12,11 +12,11 @@ readonly SYNC_ROOT="$APP_STATE/saves"
 readonly API_URL='http://127.0.0.1:8384'
 readonly ENROLLER_SERVICE='game-save-pc-enroller-v8.service'
 readonly ENROLLER_PATH='/opt/game-save-sync/device-enroller-v8.py'
-readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v8-windows-reboot-autostart-fix/device-enroller-v8.py'
+readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/a9dc1a2d5fee79e2790d6ad148aefd7de1296749/v8-windows-reboot-autostart-fix/device-enroller-v8.py'
 readonly ENROLLER_SHA='7628537129deb0517a3e6ec11aadc140a0b141964195e19bc1556e503b6be2f5'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v8-windows-reboot-autostart-fix/cloud-drive/install-cloud-drive-v8.sh'
-readonly CLOUD_INSTALLER_SHA='0618f194ea0b9f2d9983fbc3bc4026f657c23658c8a36dad3e4e64ce47e7d77a'
-readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v8-windows-reboot-autostart-fix/windows-auto-sync-v8.ps1'
+readonly CLOUD_INSTALLER_SHA='3f623c7deaaf1e7d1a97a7c9f199ee9acbb5debc5c14cf57dad4b85ef224ca29'
+readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/a9dc1a2d5fee79e2790d6ad148aefd7de1296749/v8-windows-reboot-autostart-fix/windows-auto-sync-v8.ps1'
 readonly WINDOWS_SETUP_SHA='a45b69ac138f64ff76ff6523a85a7618fd59ac0eded2792f753447968ff8e017'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
