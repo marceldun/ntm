@@ -18,7 +18,7 @@ v7 在登录启动目录中直接运行 Syncthing。Windows 登录时如果 D �
 ## 全新或已有 VPS：只运行这一行
 
 ```bash
-curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v8-windows-reboot-autostart-fix/install-vps-v8.sh -o /tmp/install-vps-v8.sh && echo 'b89589efe51a644d67e61bd34f39498e5961341d187967d21482d21586a18d38  /tmp/install-vps-v8.sh' | sha256sum -c - && bash /tmp/install-vps-v8.sh
+curl -fL --retry 5 --connect-timeout 15 https://raw.githubusercontent.com/marceldun/ntm/main/v8-windows-reboot-autostart-fix/install-vps-v8.sh -o /tmp/install-vps-v8.sh && echo 'aa43e48c7e1d2c07c88a8efbe42ba231a5881553c11d9e39f86efbd5e264cc5a  /tmp/install-vps-v8.sh' | sha256sum -c - && bash /tmp/install-vps-v8.sh
 ```
 
 脚本没有输入问题，默认使用：
