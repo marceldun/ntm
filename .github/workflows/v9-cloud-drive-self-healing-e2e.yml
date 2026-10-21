@@ -1,0 +1,65 @@
+name: V9 cloud drive repair and self-healing end-to-end
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'v9-cloud-drive-self-healing-fix/**'
+      - '.github/workflows/v9-cloud-drive-self-healing-e2e.yml'
+
+jobs:
+  fresh-install-and-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install complete V9 from a clean host
+        run: |
+          sudo timeout 12m bash v9-cloud-drive-self-healing-fix/install-vps-v9.sh | tee /tmp/v9-install.log
+          grep -F '全部安装成功' /tmp/v9-install.log
+          grep -F 'https://' /tmp/v9-install.log
+
+      - name: Verify fixed port, credentials, data transfer and units
+        run: |
+          sudo systemctl is-active --quiet game-save-sync.service
+          sudo systemctl is-active --quiet game-save-pc-enroller-v9.service
+          sudo systemctl is-active --quiet game-save-drive.service
+          sudo systemctl is-active --quiet game-save-drive-health.timer
+          sudo systemctl is-enabled --quiet game-save-drive.service
+          sudo systemctl is-enabled --quiet game-save-drive-health.timer
+          test "$(sudo cat /var/lib/game-save-sync/web/port)" = 8443
+          sudo ss -H -ltn 'sport = :8443' | grep -q .
+          sudo systemctl show game-save-drive.service -p Restart --value | grep -Fx always
+          sudo systemctl show game-save-drive.service -p MemoryMax --value | grep -Fx 134217728
+          curl -kfsS https://127.0.0.1:8443/ | grep -Fq '<!doctype html>'
+          curl -kfsS https://127.0.0.1:8443/certificate.pem | openssl x509 -checkend 2592000 -noout
+
+      - name: Prove login survives restart and the timer repairs a stopped service
+        run: |
+          cookie=/tmp/v9-cookie
+          curl -kfsS -c "$cookie" -H 'Content-Type: application/json' +            --data '{"username":"marcel","password":"456qwe456"}' +            https://127.0.0.1:8443/api/login | grep -Fq '"ok":true'
+          curl -kfsS -b "$cookie" https://127.0.0.1:8443/api/list?path= | grep -Fq '"entries"'
+          sudo systemctl stop game-save-drive.service
+          ! curl -kfsS --max-time 2 https://127.0.0.1:8443/
+          sudo /usr/local/sbin/game-save-drive-healthcheck
+          sudo systemctl is-active --quiet game-save-drive.service
+          curl -kfsS -b "$cookie" https://127.0.0.1:8443/api/list?path= | grep -Fq '"entries"'
+
+      - name: Re-run complete installer as an in-place repair
+        run: |
+          sudo timeout 12m bash v9-cloud-drive-self-healing-fix/install-vps-v9.sh >/tmp/v9-repair.log
+          grep -F 'V9 云盘已修复' /tmp/v9-repair.log
+          curl -kfsS -H 'Content-Type: application/json' +            --data '{"username":"marcel","password":"456qwe456"}' +            https://127.0.0.1:8443/api/login | grep -Fq '"ok":true'
+          sudo systemctl is-active --quiet game-save-drive.service
+          sudo systemctl is-active --quiet game-save-drive-health.timer
+          echo 'REAL V9 E2E PASSED: clean install, login, fixed 8443, restart, health repair and repeat install.'
+
+      - name: Upload service logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v9-cloud-drive-logs
+          path: |
+            /tmp/v9-install.log
+            /tmp/v9-repair.log
