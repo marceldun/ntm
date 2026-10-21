@@ -12,8 +12,8 @@ readonly HEALTH_SERVICE='game-save-drive-health.service'
 readonly HEALTH_TIMER='game-save-drive-health.timer'
 readonly HEALTH_SCRIPT='/usr/local/sbin/game-save-drive-healthcheck'
 readonly PORT=8443
-readonly APP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v9-cloud-drive-self-healing-fix/cloud-drive/app.py'
-readonly UI_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v9-cloud-drive-self-healing-fix/cloud-drive/index.html'
+readonly APP_URL='https://raw.githubusercontent.com/marceldun/ntm/9f2dfd0c9996968dbae38e370f3dfcf1acea5791/v9-cloud-drive-self-healing-fix/cloud-drive/app.py'
+readonly UI_URL='https://raw.githubusercontent.com/marceldun/ntm/9f2dfd0c9996968dbae38e370f3dfcf1acea5791/v9-cloud-drive-self-healing-fix/cloud-drive/index.html'
 readonly APP_SHA='8253d859981ff4cb3093fd645208f585440d6c8eeda29376a7395f1b9ce6084b'
 readonly UI_SHA='306ea774f564d80f11b63c7a5478adad46623d7b0bbbe9f788a850207cdea8ae'
 
