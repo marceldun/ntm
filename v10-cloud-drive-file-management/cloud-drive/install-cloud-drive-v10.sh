@@ -12,8 +12,8 @@ readonly HEALTH_SERVICE='game-save-drive-health.service'
 readonly HEALTH_TIMER='game-save-drive-health.timer'
 readonly HEALTH_SCRIPT='/usr/local/sbin/game-save-drive-healthcheck'
 readonly PORT=8443
-readonly APP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v10-cloud-drive-file-management/cloud-drive/app.py'
-readonly UI_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v10-cloud-drive-file-management/cloud-drive/index.html'
+readonly APP_URL='https://raw.githubusercontent.com/marceldun/ntm/d800ef569f2de10c6e76fd7199399a2f9da21738/v10-cloud-drive-file-management/cloud-drive/app.py'
+readonly UI_URL='https://raw.githubusercontent.com/marceldun/ntm/d800ef569f2de10c6e76fd7199399a2f9da21738/v10-cloud-drive-file-management/cloud-drive/index.html'
 readonly APP_SHA='6ad9bd10b62eaaefd38b6807c66e866ed57a417221eed3cc016e56bd98de6a91'
 readonly UI_SHA='ad3c06059169a72de4ed426adb0752d67438ea9bc3bd5153c9e05527cd5c11d4'
 

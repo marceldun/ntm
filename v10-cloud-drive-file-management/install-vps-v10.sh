@@ -11,11 +11,11 @@ readonly SYNC_ROOT="$APP_STATE/saves"
 readonly API_URL='http://127.0.0.1:8384'
 readonly ENROLLER_SERVICE='game-save-pc-enroller-v10.service'
 readonly ENROLLER_PATH='/opt/game-save-sync/device-enroller-v10.py'
-readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v10-cloud-drive-file-management/device-enroller-v10.py'
+readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/d800ef569f2de10c6e76fd7199399a2f9da21738/v10-cloud-drive-file-management/device-enroller-v10.py'
 readonly ENROLLER_SHA='7628537129deb0517a3e6ec11aadc140a0b141964195e19bc1556e503b6be2f5'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v10-cloud-drive-file-management/cloud-drive/install-cloud-drive-v10.sh'
-readonly CLOUD_INSTALLER_SHA='309be834922ccec5359d1ce8714f700f3ebaf0dae4c28b16bb4006cf7283a2f3'
-readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v10-cloud-drive-file-management/windows-auto-sync-v10.ps1'
+readonly CLOUD_INSTALLER_SHA='1fc06d41ab2b3243a47350b9b862415355585c1cb266e0c30ddda464cc75eea7'
+readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/d800ef569f2de10c6e76fd7199399a2f9da21738/v10-cloud-drive-file-management/windows-auto-sync-v10.ps1'
 readonly WINDOWS_SETUP_SHA='be04511dd64457d8c2ff56cb7fe85bc4554ce593b723384bb74b32caca95149a'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
