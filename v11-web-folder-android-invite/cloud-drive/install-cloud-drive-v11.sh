@@ -12,8 +12,8 @@ readonly HEALTH_SERVICE='game-save-drive-health.service'
 readonly HEALTH_TIMER='game-save-drive-health.timer'
 readonly HEALTH_SCRIPT='/usr/local/sbin/game-save-drive-healthcheck'
 readonly PORT=8443
-readonly APP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v11-web-folder-android-invite/cloud-drive/app.py'
-readonly UI_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v11-web-folder-android-invite/cloud-drive/index.html'
+readonly APP_URL='https://raw.githubusercontent.com/marceldun/ntm/2d2d8c861d49ef3e52f827b5c049e218c341afd6/v11-web-folder-android-invite/cloud-drive/app.py'
+readonly UI_URL='https://raw.githubusercontent.com/marceldun/ntm/2d2d8c861d49ef3e52f827b5c049e218c341afd6/v11-web-folder-android-invite/cloud-drive/index.html'
 readonly APP_SHA='df964f451a934be3485c7950403fbe6ee557a5ca5337270ffa93b08acd47b2bc'
 readonly UI_SHA='e277e822ca061b6095dd2b18aa06b61293d53376e4c816a4be7e2b18507b6288'
 
