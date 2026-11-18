@@ -1,0 +1,95 @@
+name: V12 Xray port conflict auto-bypass end-to-end
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'v12-xray-port-conflict-auto-bypass/**'
+      - '.github/workflows/v12-xray-port-conflict-auto-bypass-e2e.yml'
+
+jobs:
+  fresh-install-and-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install real Syncthing peers for invitation verification
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends syncthing
+
+      - name: Test create, select controls, rename, move and batch delete APIs
+        run: python3 -m unittest -v v12-xray-port-conflict-auto-bypass/tests/test_cloud_drive_file_management.py
+
+      - name: Prove a real Android peer receives the folder offer
+        run: python3 -m unittest -v v12-xray-port-conflict-auto-bypass/tests/test_real_syncthing_invitation.py
+
+      - name: Occupy 8443 like Xray and install complete V12
+        run: |
+          sudo systemd-run --unit=fake-xray-v12 --property=Restart=always \
+            python3 -m http.server 8443 --bind 0.0.0.0
+          sleep 1
+          sudo ss -H -ltn 'sport = :8443' | grep -q .
+          sudo timeout 12m bash v12-xray-port-conflict-auto-bypass/install-vps-v12.sh | tee /tmp/v12-install.log
+          grep -F '全部安装成功' /tmp/v12-install.log
+          grep -F '检测到 8443 已被占用' /tmp/v12-install.log
+          grep -F 'https://' /tmp/v12-install.log
+          sudo systemctl is-active --quiet fake-xray-v12.service
+          sudo cat /var/lib/game-save-sync/web/port | tee /tmp/v12-selected-port
+          test "$(cat /tmp/v12-selected-port)" = 9443
+
+      - name: Verify Xray survived and every cloud component uses the selected port
+        run: |
+          PORT=$(cat /tmp/v12-selected-port)
+          sudo systemctl is-active --quiet game-save-sync.service
+          sudo systemctl is-active --quiet game-save-pc-enroller-v12.service
+          sudo systemctl is-active --quiet game-save-drive.service
+          sudo systemctl is-active --quiet game-save-drive-health.timer
+          sudo systemctl is-enabled --quiet game-save-drive.service
+          sudo systemctl is-enabled --quiet game-save-drive-health.timer
+          test "$(sudo cat /var/lib/game-save-sync/web/port)" = "$PORT"
+          sudo ss -H -ltn 'sport = :8443' | grep -q .
+          sudo ss -H -ltn "sport = :$PORT" | grep -q .
+          sudo systemctl is-active --quiet fake-xray-v12.service
+          sudo systemctl show game-save-drive.service -p Restart --value | grep -Fx always
+          sudo systemctl show game-save-drive.service -p MemoryMax --value | grep -Fx 134217728
+          curl -kfsS "https://127.0.0.1:$PORT/" | grep -Fq '<!doctype html>'
+          curl -kfsS "https://127.0.0.1:$PORT/certificate.pem" | openssl x509 -checkend 2592000 -noout
+          sudo systemctl stop fake-xray-v12.service
+
+      - name: Prove login survives restart and the timer repairs a stopped service
+        run: |
+          PORT=$(cat /tmp/v12-selected-port)
+          cookie=/tmp/v12-cookie
+          curl -kfsS -c "$cookie" -H 'Content-Type: application/json' \
+            --data '{"username":"marcel","password":"456qwe456"}' \
+            "https://127.0.0.1:$PORT/api/login" | grep -Fq '"ok":true'
+          curl -kfsS -b "$cookie" "https://127.0.0.1:$PORT/api/list?path=" | grep -Fq '"entries"'
+          sudo systemctl stop game-save-drive.service
+          ! curl -kfsS --max-time 2 "https://127.0.0.1:$PORT/"
+          sudo /usr/local/sbin/game-save-drive-healthcheck
+          sudo systemctl is-active --quiet game-save-drive.service
+          curl -kfsS -b "$cookie" "https://127.0.0.1:$PORT/api/list?path=" | grep -Fq '"entries"'
+
+      - name: Re-run complete installer as an in-place repair
+        run: |
+          PORT=$(cat /tmp/v12-selected-port)
+          sudo timeout 12m bash v12-xray-port-conflict-auto-bypass/install-vps-v12.sh >/tmp/v12-repair.log
+          grep -F 'V12 云盘已修复' /tmp/v12-repair.log
+          test "$(sudo cat /var/lib/game-save-sync/web/port)" = "$PORT"
+          curl -kfsS -H 'Content-Type: application/json' \
+            --data '{"username":"marcel","password":"456qwe456"}' \
+            "https://127.0.0.1:$PORT/api/login" | grep -Fq '"ok":true'
+          sudo systemctl is-active --quiet game-save-drive.service
+          sudo systemctl is-active --quiet game-save-drive-health.timer
+          echo 'REAL V12 E2E PASSED: 8443 conflict preserved, 9443 selected and stable, health recovery and invitation passed.'
+
+      - name: Upload service logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-cloud-drive-logs
+          path: |
+            /tmp/v12-install.log
+            /tmp/v12-repair.log
