@@ -80,7 +80,14 @@ jobs:
           installer_rc=${PIPESTATUS[0]}
           set -e
           if [ "$installer_rc" -ne 0 ]; then
-            while IFS= read -r line; do echo "::error title=V12 repair installer::$line"; done < <(tail -80 /tmp/v12-repair.log)
+            {
+              echo '## V12 repair failure details'
+              echo '```text'
+              tail -80 /tmp/v12-repair.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            detail=$(tail -20 /tmp/v12-repair.log | tr '\n' ' ' | cut -c1-1500)
+            echo "::error title=V12 repair installer::$detail"
             exit "$installer_rc"
           fi
           grep -F 'V12 云盘已修复' /tmp/v12-repair.log
