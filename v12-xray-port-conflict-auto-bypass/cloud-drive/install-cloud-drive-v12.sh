@@ -122,7 +122,7 @@ chown gamesync:gamesync "$DRIVE_STATE/cert.pem" "$DRIVE_STATE/key.pem"
 chmod 0600 "$DRIVE_STATE/key.pem"
 
 printf '[4/6] 自动避让 Xray 并安装开机自启、自愈服务……\n'
-systemctl stop "$HEALTH_TIMER" "$DRIVE_SERVICE" 2>/dev/null || true
+systemctl stop "$HEALTH_TIMER" "$HEALTH_SERVICE" "$DRIVE_SERVICE" 2>/dev/null || true
 PREVIOUS_PORT=''
 if [[ -s "$DRIVE_STATE/port" ]]; then PREVIOUS_PORT=$(tr -cd '0-9' < "$DRIVE_STATE/port"); fi
 PORT=$(python3 - "$PREVIOUS_PORT" <<'PY'
