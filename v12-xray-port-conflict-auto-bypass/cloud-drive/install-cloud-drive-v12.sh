@@ -241,26 +241,29 @@ ss -H -ltn "sport = :$PORT" | grep -q . || fail "端口 $PORT 没有监听。"
 printf '[5/6] 验证真实登录、上传和下载……\n'
 export DRIVE_VERIFY_PASSWORD="$PASSWORD"
 python3 - "$USERNAME" "$PORT" <<'PY'
-import hashlib, http.cookiejar, json, os, ssl, sys, urllib.parse, urllib.request
+import hashlib, http.cookiejar, json, os, secrets, ssl, sys, urllib.parse, urllib.request
 user, port = sys.argv[1], int(sys.argv[2]); base = f'https://127.0.0.1:{port}'
 context = ssl._create_unverified_context()
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()), urllib.request.HTTPSHandler(context=context))
 req = urllib.request.Request(base + '/api/login', data=json.dumps({'username':user,'password':os.environ['DRIVE_VERIFY_PASSWORD']}).encode(), headers={'Content-Type':'application/json'})
 with opener.open(req, timeout=8) as response: assert json.load(response)['ok']
-payload = os.urandom(262144); name = 'v12-install-test.bin'
+test_id = secrets.token_hex(8)
+payload = os.urandom(262144); name = f'v12-install-test-{test_id}.bin'
 req = urllib.request.Request(base + '/api/upload?path=&name=' + urllib.parse.quote(name), data=payload, method='POST', headers={'Content-Type':'application/octet-stream'})
 with opener.open(req, timeout=15) as response: assert json.load(response)['ok']
 def post(path, body):
     request = urllib.request.Request(base + path, data=json.dumps(body).encode(), method='POST', headers={'Content-Type':'application/json'})
     with opener.open(request, timeout=8) as response: return json.load(response)
-assert post('/api/rename', {'path':name, 'name':'v12-renamed-test.bin'})['ok']
-created = post('/api/mkdir', {'path':'', 'name':'v12-install-folder'})
+renamed = f'v12-renamed-test-{test_id}.bin'
+folder = f'v12-install-folder-{test_id}'
+assert post('/api/rename', {'path':name, 'name':renamed})['ok']
+created = post('/api/mkdir', {'path':'', 'name':folder})
 assert created['ok'] and created['androidInvitation'] is True
-assert post('/api/move', {'paths':['v12-renamed-test.bin'], 'destination':'v12-install-folder'})['ok']
-with opener.open(base + '/api/download?path=' + urllib.parse.quote('v12-install-folder/v12-renamed-test.bin'), timeout=15) as response: downloaded = response.read()
+assert post('/api/move', {'paths':[renamed], 'destination':folder})['ok']
+with opener.open(base + '/api/download?path=' + urllib.parse.quote(folder + '/' + renamed), timeout=15) as response: downloaded = response.read()
 assert hashlib.sha256(downloaded).digest() == hashlib.sha256(payload).digest()
-with opener.open(base + '/api/folders', timeout=8) as response: assert any(item['path'] == 'v12-install-folder' for item in json.load(response)['folders'])
-assert post('/api/delete', {'paths':['v12-install-folder']})['deleted'] == 1
+with opener.open(base + '/api/folders', timeout=8) as response: assert any(item['path'] == folder for item in json.load(response)['folders'])
+assert post('/api/delete', {'paths':[folder]})['deleted'] == 1
 with opener.open(base + '/api/list?path=', timeout=8) as response: assert 'entries' in json.load(response)
 PY
 unset DRIVE_VERIFY_PASSWORD PASSWORD AUTH_DATA

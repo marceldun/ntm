@@ -75,7 +75,14 @@ jobs:
       - name: Re-run complete installer as an in-place repair
         run: |
           PORT=$(cat /tmp/v12-selected-port)
-          sudo timeout 12m bash v12-xray-port-conflict-auto-bypass/install-vps-v12.sh | tee /tmp/v12-repair.log
+          set +e
+          sudo timeout 12m bash v12-xray-port-conflict-auto-bypass/install-vps-v12.sh 2>&1 | tee /tmp/v12-repair.log
+          installer_rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$installer_rc" -ne 0 ]; then
+            while IFS= read -r line; do echo "::error title=V12 repair installer::$line"; done < <(tail -80 /tmp/v12-repair.log)
+            exit "$installer_rc"
+          fi
           grep -F 'V12 云盘已修复' /tmp/v12-repair.log
           test "$(sudo cat /var/lib/game-save-sync/web/port)" = "$PORT"
           curl -kfsS -H 'Content-Type: application/json' \
