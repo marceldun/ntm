@@ -89,17 +89,17 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             detail=$(tail -20 /tmp/v12-repair.log | tr '\n' ' ' | cut -c1-1500)
             echo "::error title=V12 repair installer::$detail"
-            diagnostic=$(grep -E '错误|失败|Traceback|Assertion|Exception|退出码' /tmp/v12-repair.log | tail -8 | gzip -9 | base64 -w0 | tr '/+' '_-' | tr -d '=' | cut -c1-200)
+            diagnostic=$(tail -2 /tmp/v12-repair.log | gzip -9 | base64 -w0 | tr '/+' '_-' | tr -d '=')
             echo "diagnostic=$diagnostic" >> "$GITHUB_OUTPUT"
             exit "$installer_rc"
           fi
-          grep -F 'V12 云盘已修复' /tmp/v12-repair.log
-          test "$(sudo cat /var/lib/game-save-sync/web/port)" = "$PORT"
+          grep -F 'V12 云盘已修复' /tmp/v12-repair.log || { echo 'diagnostic=missing-success-marker' >> "$GITHUB_OUTPUT"; exit 1; }
+          test "$(sudo cat /var/lib/game-save-sync/web/port)" = "$PORT" || { echo 'diagnostic=selected-port-changed' >> "$GITHUB_OUTPUT"; exit 1; }
           curl -kfsS -H 'Content-Type: application/json' \
             --data '{"username":"marcel","password":"456qwe456"}' \
-            "https://127.0.0.1:$PORT/api/login" | grep -Fq '"ok":true'
-          sudo systemctl is-active --quiet game-save-drive.service
-          sudo systemctl is-active --quiet game-save-drive-health.timer
+            "https://127.0.0.1:$PORT/api/login" | grep -Fq '"ok":true' || { echo 'diagnostic=login-after-repair-failed' >> "$GITHUB_OUTPUT"; exit 1; }
+          sudo systemctl is-active --quiet game-save-drive.service || { echo 'diagnostic=drive-inactive-after-repair' >> "$GITHUB_OUTPUT"; exit 1; }
+          sudo systemctl is-active --quiet game-save-drive-health.timer || { echo 'diagnostic=health-timer-inactive-after-repair' >> "$GITHUB_OUTPUT"; exit 1; }
           echo 'REAL V12 E2E PASSED: 8443 conflict preserved, 9443 selected and stable, health recovery and invitation passed.'
 
       - name: Upload service logs on failure
