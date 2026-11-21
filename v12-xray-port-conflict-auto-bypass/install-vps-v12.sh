@@ -11,11 +11,11 @@ readonly SYNC_ROOT="$APP_STATE/saves"
 readonly API_URL='http://127.0.0.1:8384'
 readonly ENROLLER_SERVICE='game-save-pc-enroller-v12.service'
 readonly ENROLLER_PATH='/opt/game-save-sync/device-enroller-v12.py'
-readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v12-xray-port-conflict-auto-bypass/device-enroller-v12.py'
+readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/59763762fe33aa5d219986a5d429e12498d2a3d1/v12-xray-port-conflict-auto-bypass/device-enroller-v12.py'
 readonly ENROLLER_SHA='7628537129deb0517a3e6ec11aadc140a0b141964195e19bc1556e503b6be2f5'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v12-xray-port-conflict-auto-bypass/cloud-drive/install-cloud-drive-v12.sh'
-readonly CLOUD_INSTALLER_SHA='a6695953b0748678ec79e74caecdfa958106cccfd3d04b8ebd0ebd6fca52ade6'
-readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v12-xray-port-conflict-auto-bypass/windows-auto-sync-v12.ps1'
+readonly CLOUD_INSTALLER_SHA='d5d3e586cdefeb64ee5bff98a409a639bf64232ea3dedeee6ed4cc88656b9c7a'
+readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/59763762fe33aa5d219986a5d429e12498d2a3d1/v12-xray-port-conflict-auto-bypass/windows-auto-sync-v12.ps1'
 readonly WINDOWS_SETUP_SHA='965f8a95cb80678677b42c3918e4bd8fdf10875c36db3981d6f15648006a2899'
 
 ANDROID_ID="${1:-XFQ7AJQ-34V53ZD-DCIHLSA-7TERDRR-27RXR54-FZCKF4I-F3FHCSC-NV4SZA3}"
