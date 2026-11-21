@@ -136,6 +136,10 @@ for port in candidates:
         continue
     seen.add(port)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # A recently stopped HTTPS service can leave connections in TIME_WAIT.
+    # Match the drive server's SO_REUSEADDR behavior so an in-place repair
+    # keeps its existing URL while a real listener (such as Xray) still wins.
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         sock.bind(('0.0.0.0', port))
     except OSError:

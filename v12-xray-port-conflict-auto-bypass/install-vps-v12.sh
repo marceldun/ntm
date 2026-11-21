@@ -14,7 +14,7 @@ readonly ENROLLER_PATH='/opt/game-save-sync/device-enroller-v12.py'
 readonly ENROLLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v12-xray-port-conflict-auto-bypass/device-enroller-v12.py'
 readonly ENROLLER_SHA='7628537129deb0517a3e6ec11aadc140a0b141964195e19bc1556e503b6be2f5'
 readonly CLOUD_INSTALLER_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v12-xray-port-conflict-auto-bypass/cloud-drive/install-cloud-drive-v12.sh'
-readonly CLOUD_INSTALLER_SHA='ecf52c8ce7d98c8c40b5bcf0e4ee020623ea09ea4634496dae877dde91500943'
+readonly CLOUD_INSTALLER_SHA='a6695953b0748678ec79e74caecdfa958106cccfd3d04b8ebd0ebd6fca52ade6'
 readonly WINDOWS_SETUP_URL='https://raw.githubusercontent.com/marceldun/ntm/main/v12-xray-port-conflict-auto-bypass/windows-auto-sync-v12.ps1'
 readonly WINDOWS_SETUP_SHA='965f8a95cb80678677b42c3918e4bd8fdf10875c36db3981d6f15648006a2899'
 
